@@ -35,6 +35,7 @@ import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import InputLabel from "@material-ui/core/InputLabel";
+import { withStyles } from "@material-ui/core/styles";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import {
   TableContainer,
@@ -80,6 +81,20 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(2),
   },
 }));
+
+const PurpleSwitch = withStyles({
+  switchBase: {
+    color: "orange",
+    "&$checked": {
+      color: " #0B0B45",
+    },
+    "&$checked + $track": {
+      backgroundColor: "black",
+    },
+  },
+  checked: {},
+  track: {},
+})(Switch);
 
 function App() {
   const [data, setData] = useState([]);
@@ -225,11 +240,12 @@ function App() {
               <MenuItem value={"MYR"}>RM</MenuItem>
             </Select>
           </FormControl>
-          <Switch
+          <PurpleSwitch
             checked={darkMode}
             onChange={() => setDarkMode(!darkMode)}
             name="checkedA"
             inputProps={{ "aria-label": "secondary checkbox" }}
+            // style={{ color: "#0B0B45" }}
           />
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
