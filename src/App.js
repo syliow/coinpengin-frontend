@@ -1,16 +1,6 @@
 import "./App.css";
 import { React } from "react";
 import { useEffect, useState } from "react";
-// import { ThemeProvider } from "styled-components";
-// import { styled } from "@mui/material/styles";
-// import Switch from "@mui/material/Switch";
-// import MenuItem from "@mui/material/MenuItem";
-// import Select from "@mui/material/Select";
-// import FormControl from "@mui/material/FormControl";
-// import FormControlLabel from "@mui/material/FormControlLabel";
-// import { FormGroup, InputLabel, Typography } from "@mui/material";
-// import { TextField } from "@mui/material";
-// import { lightTheme, darkTheme } from "./theme";
 import Switch from "@material-ui/core/Switch";
 import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
@@ -36,6 +26,9 @@ import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import InputLabel from "@material-ui/core/InputLabel";
 import { withStyles } from "@material-ui/core/styles";
+import { Autocomplete } from "@material-ui/lab";
+import Favorite from "@material-ui/icons/Favorite";
+import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import {
   TableContainer,
@@ -46,6 +39,12 @@ import {
   Table,
   TableHead,
   Typography,
+  ListItemText,
+  TextField,
+  Box,
+  Button,
+  AppBar,
+  Toolbar,
 } from "@material-ui/core";
 
 const tableIcons = {
@@ -72,6 +71,11 @@ const tableIcons = {
   ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
 };
 
+const currencyOptions = [
+  { label: "USD", value: "USD" },
+  { label: "RM", value: "MYR" },
+];
+
 const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: theme.spacing(1),
@@ -82,7 +86,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const PurpleSwitch = withStyles({
+const NightModeSwitch = withStyles({
   switchBase: {
     color: "orange",
     "&$checked": {
@@ -102,6 +106,7 @@ function App() {
   const [currency, setCurrency] = useState("USD");
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
+  const [favourite, setFavorite] = useState([]);
   const theme = createTheme({
     palette: {
       type: darkMode ? "dark" : "light",
@@ -110,8 +115,14 @@ function App() {
   const classes = useStyles();
   // const tableRef = React.createRef();
 
-  const handleChange = (event) => {
+  const handleChangeCurrency = (event) => {
     setCurrency(event.target.value);
+    console.log(currency, "hmm");
+    console.log(event.target.value, "hmm 2");
+  };
+
+  const handleAddCoinToFavourite = (event) => {
+    setFavorite(event);
   };
 
   useEffect(() => {
@@ -122,8 +133,8 @@ function App() {
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
           .then((res) => {
+            setCurrency("MYR");
             setData(res.data);
-            console.log(data);
           });
       } else if (currency === "USD") {
         axios
@@ -131,6 +142,7 @@ function App() {
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
           .then((res) => {
+            setCurrency("USD");
             setData(res.data);
           });
       }
@@ -152,8 +164,10 @@ function App() {
     {
       field: "current_price",
       title: "Price",
+      allign: "center",
       render: (row) => {
-        console.log(row, "curreency lmao");
+        // console.log(currency, "why");
+
         return (
           <div>
             {currency === "USD" ? "$" : "RM"}
@@ -166,7 +180,20 @@ function App() {
       field: "price_change_percentage_24h",
       title: "24h Change",
       render: (row) => {
-        return <div>{row.price_change_percentage_24h}%</div>;
+        return (
+          <div>
+            {currency}
+            <Typography
+              style={
+                row.price_change_percentage_24h > 0
+                  ? { color: "#8dc647" }
+                  : { color: "#e15241" }
+              }
+            >
+              {row.price_change_percentage_24h.toFixed(1)}%
+            </Typography>
+          </div>
+        );
       },
     },
     {
@@ -213,40 +240,59 @@ function App() {
     },
   ]);
 
-  const handleToggle = () => {
-    // if (theme === "light") {
-    //   setTheme("dark");
-    // } else {
-    //   setTheme("light");
-    // }
-    // console.log("toggle on ")
-    // console.log(theme,'themeee')
-  };
-  console.log(currency, "pls work");
   return (
     <ThemeProvider theme={theme}>
+      <div className="App">
+        <AppBar position="static">
+          <Toolbar>
+            <div className="login-signup">
+              <Button
+                variant="contained"
+                color="primary"
+                className="login-button"
+                allign="right"
+              >
+                Login
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                className="signup-button"
+                allign="right"
+              >
+                Signup
+              </Button>
+            </div>
+          </Toolbar>
+        </AppBar>
+      </div>
       <Paper style={{ height: "100vh" }}>
         <div style={{ maxWidth: "100%" }}>
-          <Typography>{currency}</Typography>
-          <FormControl className={classes.formControl}>
-            <InputLabel id="demo-simple-select-label">Currency:</InputLabel>
+          <Box display="flex" justifyContent="center" alignItems="center">
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
               value={currency}
-              onChange={handleChange}
+              onChange={handleChangeCurrency}
             >
-              <MenuItem value={"USD"}>USD</MenuItem>
-              <MenuItem value={"MYR"}>RM</MenuItem>
+              {currencyOptions.map((option) => (
+                <MenuItem value={option.value}>{option.label}</MenuItem>
+              ))}
             </Select>
-          </FormControl>
-          <PurpleSwitch
-            checked={darkMode}
-            onChange={() => setDarkMode(!darkMode)}
-            name="checkedA"
-            inputProps={{ "aria-label": "secondary checkbox" }}
-            // style={{ color: "#0B0B45" }}
-          />
+          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <Typography>
+              {darkMode === true ? "Dark Mode" : "Light Mode"}
+            </Typography>
+
+            <NightModeSwitch
+              checked={darkMode}
+              onChange={() => setDarkMode(!darkMode)}
+              name="checkedA"
+              inputProps={{ "aria-label": "secondary checkbox" }}
+            />
+          </Box>
+          {currency}
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
             // tableRef={tableRef}
@@ -257,6 +303,15 @@ function App() {
               pageSize: 10,
               pageSizeOptions: [10, 20, 30],
             }}
+            actions={[
+              {
+                icon: () => <FavoriteBorderIcon />,
+                tooltip: "Favorite",
+                onClick: (event, rowData) => {
+                  handleAddCoinToFavourite(rowData);
+                },
+              },
+            ]}
           />
         </div>
       </Paper>
