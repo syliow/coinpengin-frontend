@@ -35,6 +35,7 @@ import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import InputLabel from "@material-ui/core/InputLabel";
+import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import {
   TableContainer,
   Paper,
@@ -43,6 +44,7 @@ import {
   TableCell,
   Table,
   TableHead,
+  Typography,
 } from "@material-ui/core";
 
 const tableIcons = {
@@ -84,12 +86,50 @@ function App() {
   const [coins, setCoins] = useState([]);
   const [currency, setCurrency] = useState("USD");
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [theme, setTheme] = useState("dark");
+  const [darkMode, setDarkMode] = useState(true);
+  const theme = createTheme({
+    palette: {
+      type: darkMode ? "dark" : "light",
+    },
+  });
   const classes = useStyles();
   // const tableRef = React.createRef();
 
+  const handleChange = (event) => {
+    setCurrency(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (currency === "MYR") {
+        axios
+          .get(
+            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
+          )
+          .then((res) => {
+            setData(res.data);
+            console.log(data);
+          });
+      } else if (currency === "USD") {
+        axios
+          .get(
+            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
+          )
+          .then((res) => {
+            setData(res.data);
+          });
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [currency]);
+
   const [coinData] = useState([
+    {
+      title: "#",
+      field: "index",
+      render: (rowData) => <div>{rowData.tableData.id + 1}</div>,
+    },
     {
       field: "name",
       title: "Coin",
@@ -97,20 +137,48 @@ function App() {
     {
       field: "current_price",
       title: "Price",
+      render: (row) => {
+        console.log(row, "curreency lmao");
+        return (
+          <div>
+            {currency === "USD" ? "$" : "RM"}
+            {row.current_price}
+          </div>
+        );
+      },
+    },
+    {
+      field: "price_change_percentage_24h",
+      title: "24h Change",
+      render: (row) => {
+        return <div>{row.price_change_percentage_24h}%</div>;
+      },
     },
     {
       field: "total_volume",
       title: "24h Volume",
       render: (row) => {
-        return (
-          <div>
-            {row.total_volume.toLocaleString("en-US", {
-              style: "currency",
-              currency: currency,
-              minimumFractionDigits: 0,
-            })}
-          </div>
-        );
+        if (currency === "USD") {
+          return (
+            <div>
+              {row.total_volume.toLocaleString("en-RM", {
+                style: "currency",
+                currency: currency,
+                minimumFractionDigits: 0,
+              })}
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              {row.total_volume.toLocaleString("en-US", {
+                style: "currency",
+                currency: currency,
+                minimumFractionDigits: 0,
+              })}
+            </div>
+          );
+        }
       },
     },
     {
@@ -130,59 +198,6 @@ function App() {
     },
   ]);
 
-  const handleChange = (event) => {
-    setCurrency(event.target.value);
-  };
-
-  const _handleSearch = (event) => {
-    setSearch(event.target.value);
-    console.log(search, "hmm?");
-    console.log(event.target.value, "target");
-
-    _filterCoins(event.target.value);
-  };
-
-  //return filter coin data based on search value from res.data
-  const _filterCoins = () => {
-    const filteredCoins = coins.filter((coin) => {
-      return coin.name.toLowerCase().includes(search.toLowerCase());
-    });
-    setCoins(filteredCoins);
-
-    if (search === "") {
-      setCoins(coins);
-    }
-    console.log(filteredCoins, "filtered coins");
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (currency === "MYR") {
-        axios
-          .get(
-            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
-          )
-          .then((res) => {
-            setData(res.data);
-            console.log(coins, "usd coins?");
-          });
-      } else if (currency === "USD") {
-        axios
-          .get(
-            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
-          )
-          .then((res) => {
-            setData(res.data);
-            console.log(coins, "myr coins?");
-          });
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [currency]);
-
-  console.log(coins, "hmm?");
-
   const handleToggle = () => {
     // if (theme === "light") {
     //   setTheme("dark");
@@ -192,33 +207,44 @@ function App() {
     // console.log("toggle on ")
     // console.log(theme,'themeee')
   };
-
+  console.log(currency, "pls work");
   return (
-    <div style={{ maxWidth: "100%" }}>
-      <FormControl className={classes.formControl}>
-        <InputLabel id="demo-simple-select-label">Currency:</InputLabel>
-        <Select
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
-          value={currency}
-          onChange={handleChange}
-        >
-          <MenuItem value={"USD"}>USD</MenuItem>
-          <MenuItem value={"MYR"}>RM</MenuItem>
-        </Select>
-      </FormControl>
-      <MaterialTable
-        title="Material Table Actions"
-        // tableRef={tableRef}
-        icons={tableIcons}
-        columns={coinData}
-        data={data}
-        options={{
-          pageSize: 10,
-          pageSizeOptions: [10, 20, 30],
-        }}
-      />
-    </div>
+    <ThemeProvider theme={theme}>
+      <Paper style={{ height: "100vh" }}>
+        <div style={{ maxWidth: "100%" }}>
+          <Typography>{currency}</Typography>
+          <FormControl className={classes.formControl}>
+            <InputLabel id="demo-simple-select-label">Currency:</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={currency}
+              onChange={handleChange}
+            >
+              <MenuItem value={"USD"}>USD</MenuItem>
+              <MenuItem value={"MYR"}>RM</MenuItem>
+            </Select>
+          </FormControl>
+          <Switch
+            checked={darkMode}
+            onChange={() => setDarkMode(!darkMode)}
+            name="checkedA"
+            inputProps={{ "aria-label": "secondary checkbox" }}
+          />
+          <MaterialTable
+            title="Cryptocurrency Prices by Market Cap"
+            // tableRef={tableRef}
+            icons={tableIcons}
+            columns={coinData}
+            data={data}
+            options={{
+              pageSize: 10,
+              pageSizeOptions: [10, 20, 30],
+            }}
+          />
+        </div>
+      </Paper>
+    </ThemeProvider>
   );
 }
 
