@@ -30,6 +30,7 @@ import { Autocomplete } from "@material-ui/lab";
 import Favorite from "@material-ui/icons/Favorite";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
+import SignupDialog from "./components/SignupDialog";
 import {
   TableContainer,
   Paper,
@@ -46,6 +47,7 @@ import {
   AppBar,
   Toolbar,
 } from "@material-ui/core";
+import LoginDialog from "./components/LoginDialog";
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -107,6 +109,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [favourite, setFavorite] = useState([]);
+  const [openSignup, setOpenSignup] = useState(false);
+  const [openLogin, setOpenLogin] = useState(false);
+  // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
     palette: {
       type: darkMode ? "dark" : "light",
@@ -121,8 +126,24 @@ function App() {
     console.log(event.target.value, "hmm 2");
   };
 
-  const handleAddCoinToFavourite = (event) => {
-    setFavorite(event);
+  const handleAddCoinToFavourite = (coin) => {
+    setFavorite(coin);
+  };
+
+  const handleLogin = (event) => {
+    setOpenLogin(true);
+  };
+
+  const handleCloseLogin = () => {
+    setOpenLogin(false);
+  };
+
+  const handleSignup = () => {
+    setOpenSignup(true);
+  };
+
+  const handleCloseSignUp = () => {
+    setOpenSignup(false);
   };
 
   useEffect(() => {
@@ -160,6 +181,19 @@ function App() {
     {
       field: "name",
       title: "Coin",
+
+      render: (rowData) => {
+        return (
+          <Box>
+            <img
+              src={rowData.image}
+              alt={rowData.name}
+              style={{ width: "20px", height: "20px" }}
+            />
+            <Typography style={{}}>{rowData.name}</Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "current_price",
@@ -168,12 +202,7 @@ function App() {
       render: (row) => {
         // console.log(currency, "why");
 
-        return (
-          <div>
-            {currency === "USD" ? "$" : "RM"}
-            {row.current_price}
-          </div>
-        );
+        return <div>${row.current_price}</div>;
       },
     },
     {
@@ -182,7 +211,6 @@ function App() {
       render: (row) => {
         return (
           <div>
-            {currency}
             <Typography
               style={
                 row.price_change_percentage_24h > 0
@@ -251,6 +279,7 @@ function App() {
                 color="primary"
                 className="login-button"
                 allign="right"
+                onClick={handleLogin}
               >
                 Login
               </Button>
@@ -259,6 +288,7 @@ function App() {
                 color="primary"
                 className="signup-button"
                 allign="right"
+                onClick={handleSignup}
               >
                 Signup
               </Button>
@@ -315,6 +345,14 @@ function App() {
           />
         </div>
       </Paper>
+
+      <SignupDialog
+        open={openSignup}
+        handleClose={handleCloseSignUp}
+        // handleExited ={handleExitSignUp}
+      />
+
+      <LoginDialog open={openLogin} handleClose={handleCloseLogin} />
     </ThemeProvider>
   );
 }
