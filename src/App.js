@@ -46,6 +46,7 @@ import {
   Button,
   AppBar,
   Toolbar,
+  Checkbox,
 } from "@material-ui/core";
 import LoginDialog from "./components/LoginDialog";
 
@@ -111,6 +112,8 @@ function App() {
   const [favourite, setFavorite] = useState([]);
   const [openSignup, setOpenSignup] = useState(false);
   const [openLogin, setOpenLogin] = useState(false);
+  const [backendData, setBackendData] = useState({});
+
   // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
     palette: {
@@ -118,6 +121,7 @@ function App() {
     },
   });
   const classes = useStyles();
+  const label = { inputProps: { "aria-label": "Checkbox demo" } };
   // const tableRef = React.createRef();
 
   const handleChangeCurrency = (event) => {
@@ -127,7 +131,7 @@ function App() {
   };
 
   const handleAddCoinToFavourite = (coin) => {
-    setFavorite(coin);
+    setFavorite([coin, ...favourite]);
   };
 
   const handleLogin = (event) => {
@@ -144,6 +148,20 @@ function App() {
 
   const handleCloseSignUp = () => {
     setOpenSignup(false);
+  };
+
+  const fetchBE = async () => {
+    // const response = await fetch("http://localhost:5000/api/v1/coins");
+    // const data = await response.json();
+    // setBackendData(data);
+    // setLoading(false);
+    // console.log(data);
+    fetch("/api")
+      .then((response) => response.json())
+      .then((data) => {
+        setBackendData(data);
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -168,15 +186,37 @@ function App() {
           });
       }
       setLoading(false);
+      fetchBE();
     };
+
+    // const fetchAPI = async () => {
+    //   console.log("fetchhh");
+    //   //call fetchapi from backend
+    //   const res = axios.get("/testAPI");
+    //   console.log(res, "pls");
+    //   setApiResponse(res);
+    // };
+
     fetchData();
+
+    // fetchAPI();
   }, [currency]);
 
   const [coinData] = useState([
     {
       title: "#",
       field: "index",
-      render: (rowData) => <div>{rowData.tableData.id + 1}</div>,
+      render: (rowData) => (
+        <div>
+          <Checkbox
+            {...label}
+            icon={<FavoriteBorderIcon />}
+            checkedIcon={<Favorite />}
+            onClick={() => handleAddCoinToFavourite(rowData)}
+          />
+          {rowData.tableData.id + 1}
+        </div>
+      ),
     },
     {
       field: "name",
@@ -268,6 +308,9 @@ function App() {
     },
   ]);
 
+  console.log(favourite, "fav");
+  // console.log(favourite.length,'fav length')
+
   return (
     <ThemeProvider theme={theme}>
       <div className="App">
@@ -314,13 +357,17 @@ function App() {
             <Typography>
               {darkMode === true ? "Dark Mode" : "Light Mode"}
             </Typography>
-
             <NightModeSwitch
               checked={darkMode}
               onChange={() => setDarkMode(!darkMode)}
               name="checkedA"
               inputProps={{ "aria-label": "secondary checkbox" }}
             />
+            {backendData.length > 0 ? (
+              <Typography>{backendData}</Typography>
+            ) : (
+              <Typography>{"LOADING..."}</Typography>
+            )}
           </Box>
           {currency}
           <MaterialTable
@@ -333,25 +380,16 @@ function App() {
               pageSize: 10,
               pageSizeOptions: [10, 20, 30],
             }}
-            actions={[
-              {
-                icon: () => <FavoriteBorderIcon />,
-                tooltip: "Favorite",
-                onClick: (event, rowData) => {
-                  handleAddCoinToFavourite(rowData);
-                },
-              },
-            ]}
+            actions={
+              [
+                // <Checkbox {...label} icon={<FavoriteBorderIcon />} checkedIcon={<Favorite />} />
+              ]
+            }
           />
         </div>
       </Paper>
 
-      <SignupDialog
-        open={openSignup}
-        handleClose={handleCloseSignUp}
-        // handleExited ={handleExitSignUp}
-      />
-
+      <SignupDialog open={openSignup} handleClose={handleCloseSignUp} />
       <LoginDialog open={openLogin} handleClose={handleCloseLogin} />
     </ThemeProvider>
   );
