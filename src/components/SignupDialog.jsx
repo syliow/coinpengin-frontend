@@ -21,6 +21,8 @@ import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
 import * as yup from "yup";
 import { Formik } from "formik";
+import PersonIcon from "@material-ui/icons/Person";
+import FormHelperText from "@material-ui/core/FormHelperText";
 import axios from "axios";
 
 const useStyles = makeStyles((theme) => ({
@@ -45,6 +47,7 @@ const useStyles = makeStyles((theme) => ({
 
 const SignupDialog = (props) => {
   const { open, handleClose, handleExited } = props;
+  const [checked, setChecked] = useState(false);
   const formRef = useRef(null);
   const classes = useStyles();
 
@@ -57,26 +60,30 @@ const SignupDialog = (props) => {
   };
 
   const formValidation = yup.object().shape({
-    firstName: yup.string().required("First name is required"),
-    lastName: yup.string().required("Last name is required"),
-    // email: yup.string().email("Email is invalid").required("Email is required"),
-    // password: yup
-    //   .string()
-    //   .min(8, "Password must be at least 8 characters")
-    //   .required("Password is required"),
-    // confirmPassword: yup
-    //   .string()
-    //   .oneOf([yup.ref("password"), null], "Passwords must match")
-    //   .required("Confirm password is required"),
-    // acceptTerms: yup
-    //   .boolean()
-    //   .oneOf([true], "You must accept the terms and conditions to sign up")
-    //   .required("You must accept the terms and conditions to sign up"),
+    firstName: yup
+      .string()
+      .required("First name is required")
+      .matches(/^[a-zA-Z]*$/, "First name must be letters only"),
+    lastName: yup
+      .string()
+      .required("Last name is required")
+      .matches(/^[a-zA-Z]*$/, "Last name must be letters only"),
+    email: yup.string().email("Email is invalid").required("Email is required"),
+    password: yup
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .required("Password is required"),
+    confirmPassword: yup
+      .string()
+      .oneOf([yup.ref("password"), null], "Passwords must match")
+      .required("Confirm password is required"),
+    acceptTerms: yup
+      .boolean()
+      .oneOf([true], "You must accept the terms and conditions to sign up")
+      .required("You must accept the terms and conditions to sign up"),
   });
 
   const _handleSubmitForm = () => {
-    console.log("HELLO");
-    console.log(formRef.current.values, "form ref current");
     if (formRef.current) {
       formRef.current.submitForm();
     }
@@ -84,14 +91,14 @@ const SignupDialog = (props) => {
 
   const _onSubmitRefundRequest = async (values) => {
     try {
-      console.log("SUBMIT FORM OPEN");
-      console.log(values);
       let requestBody = {};
       requestBody = {
-        ...values,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
       };
       await axios.post("/api/users/signup", requestBody);
-      console.log("API SUBMITTED OK");
       handleClose();
     } catch (error) {
       console.log(error);
@@ -112,13 +119,20 @@ const SignupDialog = (props) => {
         validationSchema={formValidation}
         innerRef={formRef}
       >
-        {({ handleSubmit, isSubmitting, handleChange }) => {
+        {({
+          handleSubmit,
+          isSubmitting,
+          handleChange,
+          handleBlur,
+          touched,
+          errors,
+        }) => {
           return (
             <Container component="main" maxWidth="xs">
               <CssBaseline />
               <div className={classes.paper}>
                 <Avatar className={classes.avatar}>
-                  <LockOutlinedIcon />
+                  <PersonIcon />
                 </Avatar>
                 <Typography component="h1" variant="h5">
                   Sign up
@@ -138,8 +152,11 @@ const SignupDialog = (props) => {
                         fullWidth
                         id="firstName"
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         label="First Name"
                         autoFocus
+                        helperText={touched.firstName ? errors.firstName : ""}
+                        error={touched.firstName && Boolean(errors.firstName)}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -151,7 +168,9 @@ const SignupDialog = (props) => {
                         label="Last Name"
                         name="lastName"
                         onChange={handleChange}
-                        autoComplete="lname"
+                        onBlur={handleBlur}
+                        helperText={touched.lastName ? errors.lastName : ""}
+                        error={touched.lastName && Boolean(errors.lastName)}
                       />
                     </Grid>
                     <Grid item xs={12}>
@@ -163,6 +182,9 @@ const SignupDialog = (props) => {
                         label="Email Address"
                         name="email"
                         onChange={handleChange}
+                        onBlur={handleBlur}
+                        helperText={touched.email ? errors.email : ""}
+                        error={touched.email && Boolean(errors.email)}
                         // autoComplete="email"
                       />
                     </Grid>
@@ -175,6 +197,10 @@ const SignupDialog = (props) => {
                         label="Password"
                         type="password"
                         id="password"
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        helperText={touched.password ? errors.password : ""}
+                        error={touched.password && Boolean(errors.password)}
                         // autoComplete="current-password"
                       />
                     </Grid>
@@ -183,25 +209,44 @@ const SignupDialog = (props) => {
                         variant="outlined"
                         required
                         fullWidth
-                        name="confirm-password"
+                        name="confirmPassword"
                         label="Confirm Password"
                         type="password"
                         id="password"
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        helperText={
+                          touched.confirmPassword ? errors.confirmPassword : ""
+                        }
+                        error={
+                          touched.confirmPassword &&
+                          Boolean(errors.confirmPassword)
+                        }
                         // autoComplete="current-password"
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <FormControlLabel
                         control={
-                          <Checkbox value="allowExtraEmails" color="primary" />
+                          <Checkbox
+                            // checked={checked}
+                            id="termsChecked"
+                            name="termsChecked"
+                            // onChange={handleChange}
+                            color="primary"
+                            required
+                          />
                         }
+                        id="termsCheck"
+                        name="termsCheck"
                         label="I agree to the terms and conditions."
-                        onChange={handleChange}
                       />
+                      <FormHelperText error>
+                        {errors.termsCheck ? errors.termsCheck.message : " "}
+                      </FormHelperText>
                     </Grid>
                   </Grid>
                   <Button
-                    type="submit"
                     fullWidth
                     variant="contained"
                     color="primary"
