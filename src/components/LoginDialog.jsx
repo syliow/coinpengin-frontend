@@ -19,6 +19,10 @@ import Grid from "@material-ui/core/Grid";
 import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
 import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import { Formik } from "formik";
+import axios from "axios";
+import * as yup from "yup";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -32,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.secondary.main,
   },
   form: {
-    width: "100%", // Fix IE 11 issue.
+    width: "100%",
     marginTop: theme.spacing(3),
   },
   submit: {
@@ -43,6 +47,43 @@ const useStyles = makeStyles((theme) => ({
 const LoginDialog = (props) => {
   const { open, handleClose, handleExited } = props;
   const classes = useStyles();
+  const formRef = useRef(null);
+
+  const initialValues = {
+    email: "",
+    password: "",
+  };
+
+  const formValidation = yup.object().shape({
+    email: yup
+      .string()
+      .email("Invalid email")
+      .required("Please enter your email."),
+    password: yup.string().required("Please enter your password."),
+  });
+
+  const handleResetPassword = () => {
+    //open new dialog if password reset is required
+  };
+
+  const _handleSubmitForm = () => {
+    if (formRef.current) {
+      formRef.current.submitForm();
+    }
+  };
+
+  const _onSubmitRefundRequest = async (values) => {
+    try {
+      console.log(values, "erm ?");
+      let requestBody = {};
+      requestBody = {
+        email: values.email,
+        password: values.password,
+      };
+      await axios.post("/api/users/signin", requestBody);
+      handleClose();
+    } catch (error) {}
+  };
 
   return (
     <Dialog
@@ -51,68 +92,98 @@ const LoginDialog = (props) => {
       onExited={handleExited}
       aria-labelledby="form-dialog-title"
     >
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <div className={classes.paper}>
-          <Avatar className={classes.avatar}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Sign in
-          </Typography>
-          <form className={classes.form} noValidate>
-            <TextField
-              variant="outlined"
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-            />
-            <TextField
-              variant="outlined"
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-            />
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              className={classes.submit}
-            >
-              Sign In
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid>
-          </form>
-        </div>
-        <Box mt={8}>
-        </Box>
-      </Container>
+      <Formik
+        enableReinitialize
+        initialValues={initialValues}
+        onSubmit={_onSubmitRefundRequest}
+        validationSchema={formValidation}
+        innerRef={formRef}
+      >
+        {({
+          handleSubmit,
+          isSubmitting,
+          handleChange,
+          handleBlur,
+          touched,
+          errors,
+        }) => {
+          return (
+            <Container component="main" maxWidth="xs">
+              <CssBaseline />
+              <div className={classes.paper}>
+                <Avatar className={classes.avatar}>
+                  <ExitToAppIcon />
+                </Avatar>
+                <Typography component="h1" variant="h5">
+                  Sign in
+                </Typography>
+                <form
+                  className={classes.form}
+                  noValidate
+                  onSubmit={handleSubmit}
+                >
+                  <TextField
+                    variant="outlined"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    helperText={touched.email ? errors.email : ""}
+                    error={touched.email && Boolean(errors.email)}
+                    autoFocus
+                  />
+                  <TextField
+                    variant="outlined"
+                    required
+                    fullWidth
+                    name="password"
+                    label="Password"
+                    type="password"
+                    id="password"
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    helperText={touched.password ? errors.password : ""}
+                    error={touched.password && Boolean(errors.password)}
+                  />
+                  <FormControlLabel
+                    control={<Checkbox value="remember" color="primary" />}
+                    label="Remember me"
+                  />
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    className={classes.submit}
+                    loading={isSubmitting}
+                    onClick={_handleSubmitForm}
+                  >
+                    Sign In
+                  </Button>
+                  <Grid container>
+                    <Grid item xs>
+                      <Link
+                        href="#"
+                        variant="body2"
+                        onClick={handleResetPassword}
+                      >
+                        Forgot password?
+                      </Link>
+                    </Grid>
+                    <Grid item>
+                      <Link href="#" variant="body2">
+                        {"Don't have an account? Sign Up"}
+                      </Link>
+                    </Grid>
+                  </Grid>
+                </form>
+              </div>
+            </Container>
+          );
+        }}
+      </Formik>
     </Dialog>
   );
 };
