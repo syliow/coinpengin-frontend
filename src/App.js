@@ -31,6 +31,7 @@ import Favorite from "@material-ui/icons/Favorite";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import SignupDialog from "./components/SignupDialog";
+import CoinInfoDialog from "./components/CoinInfoDialog";
 import {
   TableContainer,
   Paper,
@@ -113,6 +114,8 @@ function App() {
   const [openSignup, setOpenSignup] = useState(false);
   const [openLogin, setOpenLogin] = useState(false);
   const [backendData, setBackendData] = useState({});
+  const [openCoinInfo, setOpenCoinInfo] = useState(false);
+  const [coinDetails, setCoinDetails] = useState({});
 
   // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
@@ -142,12 +145,21 @@ function App() {
     setOpenLogin(false);
   };
 
+  const handleCloseCoinInfo = () => {
+    setOpenCoinInfo(false);
+  };
+
   const handleSignup = () => {
     setOpenSignup(true);
   };
 
   const handleCloseSignUp = () => {
     setOpenSignup(false);
+  };
+
+  const handleDisplayCoinInfo = (coin) => {
+    setOpenCoinInfo(true);
+    setCoinDetails(coin);
   };
 
   const fetchBE = async () => {
@@ -224,16 +236,39 @@ function App() {
 
       render: (rowData) => {
         return (
-          <Box>
-            <img
-              src={rowData.image}
-              alt={rowData.name}
-              style={{ width: "20px", height: "20px" }}
-            />
-            <Typography style={{}}>{rowData.name}</Typography>
-          </Box>
+          <Button
+            style={{ textTransform: "none" }}
+  
+            //onclick alert rowdata name
+            onClick={() => handleDisplayCoinInfo(rowData)}
+
+          >
+            <Box
+              display="flex"
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <img
+                src={rowData.image}
+                alt={rowData.name}
+                style={{ width: "20px", height: "20px", marginRight: "10px" }}
+              />
+
+              {rowData.name}
+            </Box>
+          </Button>
         );
       },
+    },
+    {
+      field: "symbol",
+      title: "",
+      render: (rowData) => (
+        <Typography variant="body2" style={{ textTransform: "uppercase" }}>
+          {rowData.symbol}
+        </Typography>
+      ),
     },
     {
       field: "current_price",
@@ -391,6 +426,7 @@ function App() {
 
       <SignupDialog open={openSignup} handleClose={handleCloseSignUp} />
       <LoginDialog open={openLogin} handleClose={handleCloseLogin} />
+      <CoinInfoDialog open={openCoinInfo} handleClose={handleCloseCoinInfo} coinDetails={coinDetails}/>
     </ThemeProvider>
   );
 }
