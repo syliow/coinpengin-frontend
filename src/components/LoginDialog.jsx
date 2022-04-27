@@ -81,7 +81,7 @@ const LoginDialog = (props) => {
         password: values.password,
       };
       const { data } = await axios.post("/api/users/login", requestBody);
-      
+
       if (data) {
         await axios
           .get("/api/users/get", {
@@ -92,6 +92,8 @@ const LoginDialog = (props) => {
           .then(function (response) {
             window.localStorage.setItem("token", JSON.stringify(data.token));
           });
+
+        window.location.reload();
       }
 
       handleClose();

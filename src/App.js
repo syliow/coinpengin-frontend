@@ -116,6 +116,7 @@ function App() {
   const [backendData, setBackendData] = useState({});
   const [openCoinInfo, setOpenCoinInfo] = useState(false);
   const [coinDetails, setCoinDetails] = useState({});
+  const [isLogged, setisLogged] = useState(false);
   const [userInfo, setUserInfo] = useState({});
 
   // const [handleSignup , setHandleSignup] = useState(false);
@@ -163,6 +164,12 @@ function App() {
     setCoinDetails(coin);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setisLogged(false);
+    setUserInfo({});
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (currency === "MYR") {
@@ -187,21 +194,6 @@ function App() {
       setLoading(false);
     };
 
-    // const fetchUser = async () => {
-    //   await axios
-    //     .get("/api/users/get", {
-    //       headers: {
-    //         Authorization: `Bearer ${data.token}`,
-    //       },
-    //     })
-    //     .then(function (response) {
-    //       // handle success
-    //       console.log("DISPLAY SUCCESS");
-    //       console.log(response);
-    //     });
-    // };
-    // fetchUser();
-
     const fetchUser = async () => {
       const token = JSON.parse(window.localStorage.getItem("token"));
       if (token) {
@@ -214,9 +206,18 @@ function App() {
       }
     };
 
+    function checkStorage() {
+      if (localStorage.getItem("token")) {
+        setisLogged(true);
+      } else {
+        setisLogged(false);
+      }
+    }
+
     fetchUser();
+    checkStorage();
     fetchData();
-  }, [currency]);
+  }, [currency, isLogged]);
 
   const [coinData] = useState([
     {
@@ -353,33 +354,41 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="App">
+      <Box>
         <AppBar position="static">
           <Toolbar>
-            <div className="login-signup">
-              <Button
-                variant="contained"
-                color="primary"
-                className="login-button"
-                allign="right"
-                onClick={handleLogin}
-              >
-                Login
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                className="signup-button"
-                allign="right"
-                onClick={handleSignup}
-              >
-                Signup
-              </Button>
-              Hello, {userInfo?.firstName}
-            </div>
+            {!isLogged ? (
+              <div className="login-signup">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  className="login-button"
+                  allign="right"
+                  onClick={handleLogin}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  className="signup-button"
+                  allign="right"
+                  onClick={handleSignup}
+                >
+                  Signup
+                </Button>
+              </div>
+            ) : (
+              <Box>
+                <Typography>Hello, {userInfo?.firstName}</Typography>
+                <Button onClick={handleLogout} color="inherit">
+                  Logout
+                </Button>
+              </Box>
+            )}
           </Toolbar>
         </AppBar>
-      </div>
+      </Box>
       <Paper style={{ height: "100vh" }}>
         <div style={{ maxWidth: "100%" }}>
           <Box display="flex" justifyContent="center" alignItems="center">
