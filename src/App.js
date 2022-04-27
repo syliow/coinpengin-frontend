@@ -28,6 +28,7 @@ import InputLabel from "@material-ui/core/InputLabel";
 import { withStyles } from "@material-ui/core/styles";
 import { Autocomplete } from "@material-ui/lab";
 import Favorite from "@material-ui/icons/Favorite";
+import { Divider } from "@material-ui/core";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import SignupDialog from "./components/SignupDialog";
@@ -88,6 +89,10 @@ const useStyles = makeStyles((theme) => ({
   selectEmpty: {
     marginTop: theme.spacing(2),
   },
+
+  nightModeButton: {
+    flexGrow: 1,
+  },
 }));
 
 const NightModeSwitch = withStyles({
@@ -131,8 +136,6 @@ function App() {
 
   const handleChangeCurrency = (event) => {
     setCurrency(event.target.value);
-    console.log(currency, "hmm");
-    console.log(event.target.value, "hmm 2");
   };
 
   const handleAddCoinToFavourite = (coin) => {
@@ -282,7 +285,19 @@ function App() {
       render: (row) => {
         // console.log(currency, "why");
 
-        return <div>${row.current_price}</div>;
+        return (
+          <Box>
+            {currency === "USD" ? (
+              <Typography variant="body2">${row.current_price}</Typography>
+            ) : (
+              <Typography variant="body2">
+                MYR
+                {row.current_price}
+              </Typography>
+            )}
+            {/* {row.current_price} */}
+          </Box>
+        );
       },
     },
     {
@@ -354,34 +369,55 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box>
+      <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
+            <Typography>
+              {darkMode === true ? "Dark Mode" : "Light Mode"}
+            </Typography>
+            <NightModeSwitch
+              checked={darkMode}
+              onChange={() => setDarkMode(!darkMode)}
+              name="checkedA"
+              inputProps={{ "aria-label": "secondary checkbox" }}
+            />
+            <Divider orientation="vertical" flexItem />
+            <Typography
+              className={classes.nightModeButton}
+              variant={"body1"}
+              style={{ marginLeft: 5 }}
+            >
+              Crypto Price Tracker
+            </Typography>
             {!isLogged ? (
-              <div className="login-signup">
+              <Box className="login-signup">
                 <Button
-                  variant="contained"
-                  color="primary"
+                  variant="outlined"
                   className="login-button"
                   allign="right"
                   onClick={handleLogin}
+                  style={{ marginRight: 6 }}
                 >
                   Login
                 </Button>
                 <Button
-                  variant="contained"
-                  color="primary"
+                  variant="outlined"
                   className="signup-button"
                   allign="right"
                   onClick={handleSignup}
                 >
                   Signup
                 </Button>
-              </div>
+              </Box>
             ) : (
               <Box>
                 <Typography>Hello, {userInfo?.firstName}</Typography>
-                <Button onClick={handleLogout} color="inherit">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  className="signup-button"
+                  onClick={handleLogout}
+                >
                   Logout
                 </Button>
               </Box>
@@ -403,23 +439,6 @@ function App() {
               ))}
             </Select>
           </Box>
-          <Box display="flex" justifyContent="center" alignItems="center">
-            <Typography>
-              {darkMode === true ? "Dark Mode" : "Light Mode"}
-            </Typography>
-            <NightModeSwitch
-              checked={darkMode}
-              onChange={() => setDarkMode(!darkMode)}
-              name="checkedA"
-              inputProps={{ "aria-label": "secondary checkbox" }}
-            />
-            {backendData.length > 0 ? (
-              <Typography>{backendData}</Typography>
-            ) : (
-              <Typography>{"LOADING..."}</Typography>
-            )}
-          </Box>
-          {currency}
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
             // tableRef={tableRef}
@@ -452,6 +471,11 @@ function App() {
                 },
               },
             ]}
+            localization={{
+              header: {
+                actions: "",
+              },
+            }}
           />
         </div>
       </Paper>
