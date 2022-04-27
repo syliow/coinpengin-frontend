@@ -116,6 +116,7 @@ function App() {
   const [backendData, setBackendData] = useState({});
   const [openCoinInfo, setOpenCoinInfo] = useState(false);
   const [coinDetails, setCoinDetails] = useState({});
+  const [userInfo, setUserInfo] = useState({});
 
   // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
@@ -162,20 +163,6 @@ function App() {
     setCoinDetails(coin);
   };
 
-  const fetchBE = async () => {
-    // const response = await fetch("http://localhost:5000/api/v1/coins");
-    // const data = await response.json();
-    // setBackendData(data);
-    // setLoading(false);
-    // console.log(data);
-    fetch("/api")
-      .then((response) => response.json())
-      .then((data) => {
-        setBackendData(data);
-        setLoading(false);
-      });
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       if (currency === "MYR") {
@@ -198,34 +185,53 @@ function App() {
           });
       }
       setLoading(false);
-      fetchBE();
     };
 
-    // const fetchAPI = async () => {
-    //   console.log("fetchhh");
-    //   //call fetchapi from backend
-    //   const res = axios.get("/testAPI");
-    //   console.log(res, "pls");
-    //   setApiResponse(res);
+    // const fetchUser = async () => {
+    //   await axios
+    //     .get("/api/users/get", {
+    //       headers: {
+    //         Authorization: `Bearer ${data.token}`,
+    //       },
+    //     })
+    //     .then(function (response) {
+    //       // handle success
+    //       console.log("DISPLAY SUCCESS");
+    //       console.log(response);
+    //     });
     // };
+    // fetchUser();
 
+    const fetchUser = async () => {
+      const token = JSON.parse(window.localStorage.getItem("token"));
+      if (token) {
+        const { data } = await axios.get("/api/users/get", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUserInfo(data);
+      }
+    };
+
+    fetchUser();
     fetchData();
-
-    // fetchAPI();
   }, [currency]);
 
   const [coinData] = useState([
     {
       title: "#",
       field: "index",
+      sorting: "false",
+      allign: "center",
       render: (rowData) => (
         <div>
-          <Checkbox
+          {/* <Checkbox
             {...label}
             icon={<FavoriteBorderIcon />}
             checkedIcon={<Favorite />}
             onClick={() => handleAddCoinToFavourite(rowData)}
-          />
+          /> */}
           {rowData.tableData.id + 1}
         </div>
       ),
@@ -238,10 +244,8 @@ function App() {
         return (
           <Button
             style={{ textTransform: "none" }}
-  
             //onclick alert rowdata name
             onClick={() => handleDisplayCoinInfo(rowData)}
-
           >
             <Box
               display="flex"
@@ -345,6 +349,7 @@ function App() {
 
   console.log(favourite, "fav");
   // console.log(favourite.length,'fav length')
+  console.log(userInfo, "user info");
 
   return (
     <ThemeProvider theme={theme}>
@@ -370,6 +375,7 @@ function App() {
               >
                 Signup
               </Button>
+              Hello, {userInfo?.firstName}
             </div>
           </Toolbar>
         </AppBar>
@@ -415,18 +421,39 @@ function App() {
               pageSize: 10,
               pageSizeOptions: [10, 20, 30],
             }}
-            actions={
-              [
-                // <Checkbox {...label} icon={<FavoriteBorderIcon />} checkedIcon={<Favorite />} />
-              ]
-            }
+            actions={[
+              {
+                icon: () => (
+                  <FavoriteBorderIcon
+                    style={{
+                      //only change the color of the icon when the coin is in the favourite list
+                      color:
+                        favourite.find((coin) => coin.id === data[1].id) !==
+                        undefined
+                          ? "red"
+                          : "",
+                    }}
+                  />
+                ),
+                tooltip: "Wishlist this Coin",
+                onClick: (event, rowData) => {
+                  console.log(data[0].id, "yo wtf?");
+                  //add coin to favourites on click
+                  handleAddCoinToFavourite(rowData);
+                },
+              },
+            ]}
           />
         </div>
       </Paper>
 
       <SignupDialog open={openSignup} handleClose={handleCloseSignUp} />
       <LoginDialog open={openLogin} handleClose={handleCloseLogin} />
-      <CoinInfoDialog open={openCoinInfo} handleClose={handleCloseCoinInfo} coinDetails={coinDetails}/>
+      <CoinInfoDialog
+        open={openCoinInfo}
+        handleClose={handleCloseCoinInfo}
+        coinDetails={coinDetails}
+      />
     </ThemeProvider>
   );
 }

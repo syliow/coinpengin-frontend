@@ -80,7 +80,20 @@ const LoginDialog = (props) => {
         email: values.email,
         password: values.password,
       };
-      await axios.post("/api/users/signin", requestBody);
+      const { data } = await axios.post("/api/users/login", requestBody);
+      
+      if (data) {
+        await axios
+          .get("/api/users/get", {
+            headers: {
+              Authorization: `Bearer ${data.token}`,
+            },
+          })
+          .then(function (response) {
+            window.localStorage.setItem("token", JSON.stringify(data.token));
+          });
+      }
+
       handleClose();
     } catch (error) {}
   };
