@@ -414,7 +414,6 @@ function App() {
                 <Typography>Hello, {userInfo?.firstName}</Typography>
                 <Button
                   variant="outlined"
-                  color="primary"
                   className="signup-button"
                   onClick={handleLogout}
                 >
