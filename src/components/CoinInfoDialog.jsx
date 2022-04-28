@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
 import Dialog from "@material-ui/core/Dialog";
@@ -14,7 +14,29 @@ import CloseIcon from "@material-ui/icons/Close";
 import Slide from "@material-ui/core/Slide";
 import Box from "@material-ui/core/Box";
 import { DialogContent } from "@material-ui/core";
+import { Line } from "react-chartjs-2";
 import moment from "moment";
+import axios from "axios";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 moment().format();
 const useStyles = makeStyles((theme) => ({
@@ -25,6 +47,21 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: theme.spacing(2),
     flex: 1,
   },
+  container: {
+    width: "75%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 25,
+    padding: 40,
+    [theme.breakpoints.down("md")]: {
+      width: "100%",
+      marginTop: 0,
+      padding: 20,
+      paddingTop: 0,
+    },
+  },
 }));
 
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -33,11 +70,46 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const CoinInfoDialog = (props) => {
   const { open, handleClose, handleExited, coinDetails } = props;
+  const [priceHistory, setPriceHistory] = useState([]);
+  const [days, setDays] = useState(1);
   const classes = useStyles();
   // const [open, setOpen] = React.useState(false);
 
+  const HistoricalChart = (id, days = 365) =>
+    `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
+
+  const fetchPriceChart = async () => {
+    const { data } = await axios.get(HistoricalChart(coinDetails.id, days));
+    console.log(data, "graph ");
+    setPriceHistory(data.prices);
+    console.log(data.prices, "erm okay");
+  };
+
+  const chartDays = [
+    {
+      label: "24 Hours",
+      value: 1,
+    },
+    {
+      label: "30 Days",
+      value: 30,
+    },
+    {
+      label: "3 Months",
+      value: 90,
+    },
+    {
+      label: "1 Year",
+      value: 365,
+    },
+  ];
+
+  useEffect(() => {
+    fetchPriceChart();
+  }, [days]);
+
   return (
-    <div>
+    <Box>
       <Dialog
         fullScreen
         open={open}
@@ -60,179 +132,256 @@ const CoinInfoDialog = (props) => {
           </Toolbar>
         </AppBar>
 
-        <DialogContent>
-          <Box
-            display="flex"
-            flexDirection={{ xs: "column", md: "row" }}
-            mb={1}
-            style={{ gap: "10px" }}
-          >
-            <Box flex={2}>
-              <Typography
-                variant="h5"
-                component="h2"
-                style={{ display: "inline-block" }}
-              >
-                <img
-                  src={coinDetails.image}
-                  alt={coinDetails.name}
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    marginRight: "10px",
-                    marginTop: "10px",
-                  }}
-                />
-                {coinDetails.name}
-              </Typography>
-              <Typography variant="title" color="inherit" noWrap>
-                &nbsp;
-              </Typography>
-              <Typography
-                variant="h6"
-                style={{ textTransform: "uppercase", display: "inline-block" }}
-              >
-                ({coinDetails?.symbol})
-              </Typography>
-              <Typography
-                style={
-                  coinDetails.price_change_percentage_24h > 0
-                    ? { color: "#8dc647", display: "inline-block", marginLeft: "10px" }
-                    : { color: "#e15241", display: "inline-block", marginLeft: "10px" }
-                }
-              >
-                {coinDetails?.price_change_percentage_24h?.toFixed(1)}%
-              </Typography>
-              <Typography variant="h4" component="p">
-                ${coinDetails?.current_price?.toLocaleString()}
-              </Typography>
-            </Box>
-
-            <Box flex={2}>
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="Market Cap"
-                    secondary={`$${coinDetails?.market_cap?.toLocaleString()}`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Total Supply"
-                    secondary={`${
-                      coinDetails?.total_supply
-                        ? coinDetails?.total_supply?.toLocaleString()
-                        : "-"
-                    }`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Max Supply"
-                    secondary={`${
-                      coinDetails?.max_supply
-                        ? coinDetails?.max_supply?.toLocaleString()
-                        : "-"
-                    }`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Circulating Supply"
-                    secondary={`${coinDetails?.circulating_supply?.toLocaleString()}`}
-                  />
-                </ListItem>
-              </List>
-            </Box>
-
-            <Box flex={2}>
-              <Box display="flex" flexDirection="row">
+        {!priceHistory ? (
+          <div>Loading...</div>
+        ) : (
+          <DialogContent>
+            <Box
+              display="flex"
+              // flexDirection={{ xs: "column", md: "row" }}
+              mb={1}
+              style={{ gap: "10px" }}
+            >
+              <Box flex={2}>
                 <Typography
                   variant="h5"
+                  component="h2"
+                  style={{ display: "inline-block" }}
+                >
+                  <img
+                    src={coinDetails.image}
+                    alt={coinDetails.name}
+                    style={{
+                      width: "30px",
+                      height: "30px",
+                      marginRight: "10px",
+                      marginTop: "10px",
+                    }}
+                  />
+                  {coinDetails.name}
+                </Typography>
+                <Typography variant="title" color="inherit" noWrap>
+                  &nbsp;
+                </Typography>
+                <Typography
+                  variant="h6"
                   style={{
                     textTransform: "uppercase",
                     display: "inline-block",
                   }}
                 >
-                  {coinDetails.symbol}
+                  ({coinDetails?.symbol})
                 </Typography>
-                <Typography variant="title" color="inherit" noWrap>
-                  &nbsp;
+                <Typography
+                  style={
+                    coinDetails.price_change_percentage_24h > 0
+                      ? {
+                          color: "#8dc647",
+                          display: "inline-block",
+                          marginLeft: "10px",
+                        }
+                      : {
+                          color: "#e15241",
+                          display: "inline-block",
+                          marginLeft: "10px",
+                        }
+                  }
+                >
+                  {coinDetails?.price_change_percentage_24h?.toFixed(1)}%
                 </Typography>
-                <Typography variant="h5" style={{ display: "inline-block", marginTop:"20px" }}>
-                  {" "}
-                  Price Statistics
+                <Typography variant="h4" component="p">
+                  ${coinDetails?.current_price?.toLocaleString()}
                 </Typography>
               </Box>
-              <Typography variant="subtitle1">Price Today</Typography>
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary={`${coinDetails.name} Price`}
-                    secondary={`$${coinDetails.current_price}`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Market Cap Rank"
-                    secondary={`#${coinDetails.market_cap_rank}`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="24h Low / 24h High"
-                    secondary={`$${coinDetails.low_24h} / $${coinDetails.high_24h}`}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="All-Time High"
-                    secondary={`$${coinDetails.ath} `}
-                  />
-                  <Typography variant="subtitle">
-                    {moment(coinDetails.ath_date).format("MMM Do YYYY")}
+
+              <Box flex={2} width="10%">
+                <List>
+                  <ListItem>
+                    <ListItemText
+                      primary="Market Cap"
+                      secondary={`$${coinDetails?.market_cap?.toLocaleString()}`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="Total Supply"
+                      secondary={`${
+                        coinDetails?.total_supply
+                          ? coinDetails?.total_supply?.toLocaleString()
+                          : "-"
+                      }`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="Max Supply"
+                      secondary={`${
+                        coinDetails?.max_supply
+                          ? coinDetails?.max_supply?.toLocaleString()
+                          : "-"
+                      }`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="Circulating Supply"
+                      secondary={`${coinDetails?.circulating_supply?.toLocaleString()}`}
+                    />
+                  </ListItem>
+                </List>
+              </Box>
+
+              <Box flex={2}>
+                <Box display="flex" flexDirection="row">
+                  <Typography
+                    variant="h5"
+                    style={{
+                      textTransform: "uppercase",
+                      display: "inline-block",
+                    }}
+                  >
+                    {coinDetails.symbol}
                   </Typography>
                   <Typography variant="title" color="inherit" noWrap>
                     &nbsp;
                   </Typography>
                   <Typography
-                    variant="subtitle "
-                    style={{ fontWeight: 600, color: "#e15241" }}
+                    variant="h5"
+                    style={{ display: "inline-block", marginTop: "20px" }}
                   >
-                    ({coinDetails.ath_change_percentage}%)
+                    {" "}
+                    Price Statistics
                   </Typography>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="All-Time Low"
-                    secondary={`$${coinDetails.atl}`}
+                </Box>
+                <Typography variant="subtitle1">Price Today</Typography>
+                <List>
+                  <ListItem>
+                    <ListItemText
+                      primary={`${coinDetails.name} Price`}
+                      secondary={`$${coinDetails.current_price}`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="Market Cap Rank"
+                      secondary={`#${coinDetails.market_cap_rank}`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="24h Low / 24h High"
+                      secondary={`$${coinDetails.low_24h} / $${coinDetails.high_24h}`}
+                    />
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="All-Time High"
+                      secondary={`$${coinDetails.ath} `}
+                    />
+                    <Typography variant="subtitle">
+                      {moment(coinDetails.ath_date).format("MMM Do YYYY")}
+                    </Typography>
+                    <Typography variant="title" color="inherit" noWrap>
+                      &nbsp;
+                    </Typography>
+                    <Typography
+                      variant="subtitle "
+                      style={{ fontWeight: 600, color: "#e15241" }}
+                    >
+                      ({coinDetails.ath_change_percentage}%)
+                    </Typography>
+                  </ListItem>
+                  <Divider />
+                  <ListItem>
+                    <ListItemText
+                      primary="All-Time Low"
+                      secondary={`$${coinDetails.atl}`}
+                    />
+                    <Typography variant="subtitle">
+                      {moment(coinDetails.atl_date).format("MMM Do YYYY")}
+                    </Typography>
+                    <Typography variant="title" color="inherit" noWrap>
+                      &nbsp;
+                    </Typography>
+                    <Typography
+                      variant="subtitle"
+                      style={{ fontWeight: 600, color: "#8dc647" }}
+                    >
+                      ({coinDetails.atl_change_percentage}%)
+                    </Typography>
+                  </ListItem>
+                </List>
+
+                <Box
+                  display="flex"
+                  flexDirection="row"
+                  justifyContent="space-between"
+                  style={{ marginTop: "20px" }}
+                >
+                  <Line
+                    data={{
+                      labels: priceHistory.map((coin) => {
+                        let date = new Date(coin[0]);
+                        let time =
+                          date.getHours() > 12
+                            ? `${date.getHours() - 12}:${date.getMinutes()} PM`
+                            : `${date.getHours()}:${date.getMinutes()} AM`;
+                        return days === 1 ? time : date.toLocaleDateString();
+                      }),
+
+                      datasets: [
+                        {
+                          data: priceHistory.map((coin) => coin[1]),
+                          label: `Price ( Past ${days} Days ) `,
+                          borderColor: "#3b82f680",
+                        },
+                      ],
+                    }}
+                    options={{
+                      elements: {
+                        point: {
+                          radius: 1,
+                        },
+                      },
+                    }}
                   />
-                  <Typography variant="subtitle">
-                    {moment(coinDetails.atl_date).format("MMM Do YYYY")}
-                  </Typography>
-                  <Typography variant="title" color="inherit" noWrap>
-                    &nbsp;
-                  </Typography>
-                  <Typography
-                    variant="subtitle"
-                    style={{ fontWeight: 600, color: "#8dc647" }}
+
+                  <Box
+                    style={{
+                      display: "flex",
+                      marginTop: 20,
+                      justifyContent: "space-around",
+                      width: "100%",
+                    }}
                   >
-                    ({coinDetails.atl_change_percentage}%)
-                  </Typography>
-                </ListItem>
-              </List>
+                    {chartDays.map((day) => (
+                      <Button
+                        key={day.value}
+                        onClick={() => {
+                          setDays(day.value);
+                        }}
+                        style={{
+                          backgroundColor: days === day.value ? "#e15241" : "",
+                        }}
+                        selected={day.value === days}
+                      >
+                        {day.label}
+                      </Button>
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
             </Box>
-          </Box>
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
-    </div>
+    </Box>
   );
 };
 
