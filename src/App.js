@@ -29,6 +29,8 @@ import { withStyles } from "@material-ui/core/styles";
 import { Autocomplete } from "@material-ui/lab";
 import Favorite from "@material-ui/icons/Favorite";
 import { Divider } from "@material-ui/core";
+import logo from "../src/images/Logo.png";
+import Footer from "./components/Footer";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import SignupDialog from "./components/SignupDialog";
@@ -49,6 +51,7 @@ import {
   AppBar,
   Toolbar,
   Checkbox,
+  Avatar,
 } from "@material-ui/core";
 import LoginDialog from "./components/LoginDialog";
 
@@ -138,8 +141,13 @@ function App() {
     setCurrency(event.target.value);
   };
 
-  const handleAddCoinToFavourite = (coin) => {
+  const handleAddCoinToFavourite = async (coin) => {
     setFavorite([coin, ...favourite]);
+
+    await axios.post("/api/favourite", {
+      coin: coin.name,
+      // user: userInfo.username,
+    });
   };
 
   const handleLogin = (event) => {
@@ -236,7 +244,7 @@ function App() {
             checkedIcon={<Favorite />}
             onClick={() => handleAddCoinToFavourite(rowData)}
           /> */}
-          {rowData.tableData.id + 1}
+          {rowData.market_cap_rank}
         </div>
       ),
     },
@@ -369,75 +377,90 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography>
-              {darkMode === true ? "Dark Mode" : "Light Mode"}
-            </Typography>
-            <NightModeSwitch
-              checked={darkMode}
-              onChange={() => setDarkMode(!darkMode)}
-              name="checkedA"
-              inputProps={{ "aria-label": "secondary checkbox" }}
-            />
-            <Divider orientation="vertical" flexItem />
-            <Typography
-              className={classes.nightModeButton}
-              variant={"body1"}
-              style={{ marginLeft: 5 }}
-            >
-              Crypto Price Tracker
-            </Typography>
-            {!isLogged ? (
-              <Box className="login-signup">
-                <Button
-                  variant="outlined"
-                  className="login-button"
-                  allign="right"
-                  onClick={handleLogin}
-                  style={{ marginRight: 6 }}
-                >
-                  Login
-                </Button>
-                <Button
-                  variant="outlined"
-                  className="signup-button"
-                  allign="right"
-                  onClick={handleSignup}
-                >
-                  Signup
-                </Button>
-              </Box>
-            ) : (
-              <Box>
-                <Typography>Hello, {userInfo?.firstName}</Typography>
-                <Button
-                  variant="outlined"
-                  className="signup-button"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </Button>
-              </Box>
-            )}
-          </Toolbar>
-        </AppBar>
-      </Box>
       <Paper style={{ height: "100vh" }}>
+        <Box sx={{ flexGrow: 1 }}>
+          <AppBar position="static" color="inherit">
+            <Toolbar>
+              <Typography variant="h6">
+                {/* 
+              <img
+                src={logo}
+                alt="logo"
+                style={{ width: "50px", height: "50px" }}
+              /> */}
+                <Avatar alt="logo" src={logo}></Avatar>
+              </Typography>
+              <Typography
+                className={classes.nightModeButton}
+                variant={"body1"}
+                style={{ marginLeft: 5 }}
+              >
+                CoinPengin
+              </Typography>
+
+              <Typography>
+                {darkMode === true ? "Dark Mode" : "Light Mode"}
+              </Typography>
+              <NightModeSwitch
+                checked={darkMode}
+                onChange={() => setDarkMode(!darkMode)}
+                name="checkedA"
+                inputProps={{ "aria-label": "secondary checkbox" }}
+              />
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={currency}
+                onChange={handleChangeCurrency}
+                style={{ width: 100, marginRight: 15 }}
+              >
+                {currencyOptions.map((option) => (
+                  <MenuItem value={option.value}>{option.label}</MenuItem>
+                ))}
+              </Select>
+              <Divider
+                orientation="vertical"
+                flexItem
+                style={{ marginRight: 6 }}
+              />
+              {!isLogged ? (
+                <Box className="login-signup">
+                  <Button
+                    variant="outlined"
+                    className="login-button"
+                    allign="right"
+                    onClick={handleLogin}
+                    style={{ marginRight: 6 }}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    className="signup-button"
+                    allign="right"
+                    onClick={handleSignup}
+                  >
+                    Signup
+                  </Button>
+                </Box>
+              ) : (
+                <Box style={{ marginLeft: 6 }}>
+                  <Typography>Hello, {userInfo?.firstName}</Typography>
+                  <Button
+                    variant="outlined"
+                    className="signup-button"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
+                </Box>
+              )}
+            </Toolbar>
+          </AppBar>
+        </Box>
+
         <div style={{ maxWidth: "100%" }}>
-          <Box display="flex" justifyContent="center" alignItems="center">
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={currency}
-              onChange={handleChangeCurrency}
-            >
-              {currencyOptions.map((option) => (
-                <MenuItem value={option.value}>{option.label}</MenuItem>
-              ))}
-            </Select>
-          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
             // tableRef={tableRef}
@@ -452,14 +475,14 @@ function App() {
               {
                 icon: () => (
                   <FavoriteBorderIcon
-                    style={{
-                      //only change the color of the icon when the coin is in the favourite list
-                      color:
-                        favourite.find((coin) => coin.id === data[1].id) !==
-                        undefined
-                          ? "red"
-                          : "",
-                    }}
+                  // style={{
+                  //   //only change the color of the icon when the coin is in the favourite list
+                  //   color:
+                  //     favourite.find((coin) => coin.id === data[1].id) !==
+                  //     undefined
+                  //       ? "red"
+                  //       : "",
+                  // }}
                   />
                 ),
                 tooltip: "Wishlist this Coin",
@@ -477,6 +500,7 @@ function App() {
             }}
           />
         </div>
+        <Footer />
       </Paper>
 
       <SignupDialog open={openSignup} handleClose={handleCloseSignUp} />
