@@ -32,6 +32,8 @@ import { Divider } from "@material-ui/core";
 import logo from "../src/images/Logo.png";
 import Footer from "./components/Footer";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
+import Brightness2Icon from "@material-ui/icons/Brightness2";
+import Brightness7Icon from "@material-ui/icons/Brightness7";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import SignupDialog from "./components/SignupDialog";
 import CoinInfoDialog from "./components/CoinInfoDialog";
@@ -382,12 +384,6 @@ function App() {
           <AppBar position="static" color="inherit">
             <Toolbar>
               <Typography variant="h6">
-                {/* 
-              <img
-                src={logo}
-                alt="logo"
-                style={{ width: "50px", height: "50px" }}
-              /> */}
                 <Avatar alt="logo" src={logo}></Avatar>
               </Typography>
               <Typography
@@ -398,15 +394,24 @@ function App() {
                 CoinPengin
               </Typography>
 
-              <Typography>
-                {darkMode === true ? "Dark Mode" : "Light Mode"}
-              </Typography>
-              <NightModeSwitch
-                checked={darkMode}
-                onChange={() => setDarkMode(!darkMode)}
-                name="checkedA"
-                inputProps={{ "aria-label": "secondary checkbox" }}
-              />
+              <Box
+                display="flex"
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Button
+                  onClick={() => {
+                    setDarkMode(!darkMode);
+                  }}
+                >
+                  {darkMode === true ? (
+                    <Brightness2Icon />
+                  ) : (
+                    <Brightness7Icon />
+                  )}
+                </Button>
+              </Box>
               <Select
                 labelId="demo-simple-select-label"
                 id="demo-simple-select"
@@ -459,7 +464,7 @@ function App() {
           </AppBar>
         </Box>
 
-        <div style={{ maxWidth: "100%" }}>
+        <div style={{ maxWidth: "100%", marginTop: "30px" }}>
           <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
@@ -509,6 +514,7 @@ function App() {
         open={openCoinInfo}
         handleClose={handleCloseCoinInfo}
         coinDetails={coinDetails}
+        currency={currency}
       />
     </ThemeProvider>
   );
