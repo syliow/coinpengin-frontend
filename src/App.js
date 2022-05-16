@@ -1,5 +1,5 @@
 import "./App.css";
-import { React } from "react";
+import React from "react";
 import { useEffect, useState } from "react";
 import Switch from "@material-ui/core/Switch";
 import axios from "axios";
@@ -31,12 +31,17 @@ import Favorite from "@material-ui/icons/Favorite";
 import { Divider } from "@material-ui/core";
 import logo from "../src/images/Logo.png";
 import Footer from "./components/Footer";
+import FavoriteIcon from "@material-ui/icons/Favorite";
 import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import Brightness2Icon from "@material-ui/icons/Brightness2";
 import Brightness7Icon from "@material-ui/icons/Brightness7";
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import SignupDialog from "./components/SignupDialog";
 import CoinInfoDialog from "./components/CoinInfoDialog";
+import Snackbar from "@material-ui/core/Snackbar";
+import IconButton from "@material-ui/core/IconButton";
+import CloseIcon from "@material-ui/icons/Close";
+import RefreshIcon from "@material-ui/icons/Refresh";
 import {
   TableContainer,
   Paper,
@@ -54,6 +59,7 @@ import {
   Toolbar,
   Checkbox,
   Avatar,
+  Tooltip,
 } from "@material-ui/core";
 import LoginDialog from "./components/LoginDialog";
 
@@ -127,7 +133,10 @@ function App() {
   const [openCoinInfo, setOpenCoinInfo] = useState(false);
   const [coinDetails, setCoinDetails] = useState({});
   const [isLogged, setisLogged] = useState(false);
+  const [openToast, setOpenToast] = useState(false);
   const [userInfo, setUserInfo] = useState({});
+  const [wishlist, setWishlist] = useState([]);
+  const [selected, setSelected] = useState();
 
   // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
@@ -141,15 +150,6 @@ function App() {
 
   const handleChangeCurrency = (event) => {
     setCurrency(event.target.value);
-  };
-
-  const handleAddCoinToFavourite = async (coin) => {
-    setFavorite([coin, ...favourite]);
-
-    await axios.post("/api/favourite", {
-      coin: coin.name,
-      // user: userInfo.username,
-    });
   };
 
   const handleLogin = (event) => {
@@ -172,6 +172,15 @@ function App() {
     setOpenSignup(false);
   };
 
+  const handleOpenToast = () => {
+    setOpenToast(true);
+    console.log("close toast");
+  };
+
+  const handleCloseToast = (event) => {
+    setOpenToast(false);
+  };
+
   const handleDisplayCoinInfo = (coin) => {
     setOpenCoinInfo(true);
     setCoinDetails(coin);
@@ -181,6 +190,7 @@ function App() {
     localStorage.removeItem("token");
     setisLogged(false);
     setUserInfo({});
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -204,6 +214,7 @@ function App() {
             setData(res.data);
           });
       }
+
       setLoading(false);
     };
 
@@ -216,6 +227,7 @@ function App() {
           },
         });
         setUserInfo(data);
+        setFavorite(data?.wishlist);
       }
     };
 
@@ -373,9 +385,25 @@ function App() {
     },
   ]);
 
-  console.log(favourite, "fav");
-  // console.log(favourite.length,'fav length')
-  console.log(userInfo, "user info");
+  const handleTest = async (coin) => {
+    if (!favourite.includes(coin)) {
+      setFavorite([coin, ...favourite]);
+      await axios.post("/api/users/wishlist", {
+        coin: coin.name,
+        coin_id: coin.id,
+        user_email: userInfo.email,
+      });
+    } else {
+      setFavorite(favourite.filter((item) => item !== coin));
+      await axios.post("/api/users/wishlist", {
+        coin: coin.name,
+        coin_id: coin.id,
+        user_email: userInfo.email,
+      });
+    }
+  };
+
+  console.log(favourite, " user wishlist 2.0");
 
   return (
     <ThemeProvider theme={theme}>
@@ -406,9 +434,13 @@ function App() {
                   }}
                 >
                   {darkMode === true ? (
-                    <Brightness2Icon />
+                    <Tooltip title="Dark Mode">
+                      <Brightness2Icon />
+                    </Tooltip>
                   ) : (
-                    <Brightness7Icon />
+                    <Tooltip title="Light Mode">
+                      <Brightness7Icon />
+                    </Tooltip>
                   )}
                 </Button>
               </Box>
@@ -464,6 +496,29 @@ function App() {
           </AppBar>
         </Box>
 
+        <Snackbar
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          open={handleOpenToast}
+          autoHideDuration={6000}
+          onClose={handleCloseToast}
+          message="Test"
+          action={
+            <React.Fragment>
+              <IconButton
+                size="small"
+                aria-label="close"
+                color="inherit"
+                onClick={handleCloseToast}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </React.Fragment>
+          }
+        />
+
         <div style={{ maxWidth: "100%", marginTop: "30px" }}>
           <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
@@ -478,24 +533,35 @@ function App() {
             }}
             actions={[
               {
-                icon: () => (
-                  <FavoriteBorderIcon
-                  // style={{
-                  //   //only change the color of the icon when the coin is in the favourite list
-                  //   color:
-                  //     favourite.find((coin) => coin.id === data[1].id) !==
-                  //     undefined
-                  //       ? "red"
-                  //       : "",
-                  // }}
-                  />
-                ),
-                tooltip: "Wishlist this Coin",
-                onClick: (event, rowData) => {
-                  console.log(data[0].id, "yo wtf?");
-                  //add coin to favourites on click
-                  handleAddCoinToFavourite(rowData);
-                },
+                icon: RefreshIcon,
+                tooltip: "Refresh Price",
+                isFreeAction: true,
+                // onClick: () => tableRef.current && tableRef.current.onQueryChange()
+              },
+
+              (rowData) => {
+                const active = favourite?.find(
+                  (fav) => fav.symbol === rowData.symbol
+                );
+
+                const checkWishlist = favourite?.includes(rowData.name);
+
+                console.log(active, " active status ");
+                console.log(checkWishlist, "checkwishlist");
+
+                // userInfo?.wishlist?.includes(rowData.symbol) ||
+                return {
+                  icon: () =>
+                    !checkWishlist && !active ? (
+                      <FavoriteBorderIcon />
+                    ) : (
+                      //either checkwishlist or active is true
+                      <Favorite style={{ color: "#e15241" }} />
+                    ),
+                  onClick: (event, rowData) => {
+                    handleTest(rowData);
+                  },
+                };
               },
             ]}
             localization={{
