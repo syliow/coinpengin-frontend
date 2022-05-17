@@ -87,15 +87,14 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const CoinInfoDialog = (props) => {
-  const { open, handleClose, handleExited, coinDetails } = props;
+  const { open, handleClose, handleExited, coinDetails, currency } = props;
   const [priceHistory, setPriceHistory] = useState([]);
   const [days, setDays] = useState(1);
   const classes = useStyles();
   // const [open, setOpen] = React.useState(false);
 
-  const HistoricalChart = (id, days = 365) =>
-    `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
-
+  const HistoricalChart = (id, currency, days = 365) =>
+    `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${currency}&days=${days}`;
 
   const chartDays = [
     {
@@ -118,13 +117,15 @@ const CoinInfoDialog = (props) => {
 
   useEffect(() => {
     const fetchPriceChart = async () => {
-      const { data } = await axios.get(HistoricalChart(coinDetails.id, days));
+      const { data } = await axios.get(
+        HistoricalChart(coinDetails.id, currency, days)
+      );
       setPriceHistory(data.prices);
     };
 
     fetchPriceChart();
     //TODO
-  }, [coinDetails.id, days]);
+  }, [open, coinDetails.id, days]);
 
   return (
     <Grid className="container" style={{ backgroundColor: "black" }}>
