@@ -12,7 +12,7 @@ import IconButton from "@material-ui/core/IconButton";
 import Typography from "@material-ui/core/Typography";
 import CloseIcon from "@material-ui/icons/Close";
 import Slide from "@material-ui/core/Slide";
-import Box from "@material-ui/core/Box";
+import Grid from "@material-ui/core/Grid";
 import { DialogContent } from "@material-ui/core";
 import { Line } from "react-chartjs-2";
 import moment from "moment";
@@ -47,7 +47,25 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: theme.spacing(2),
     flex: 1,
   },
+  sideBar: {
+    width: "30%",
+    [theme.breakpoints.down("md")]: {
+      width: "100%",
+    },
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginTop: 25,
+    borderRight: "2px solid grey",
+  },
   container: {
+    display: "flex",
+    [theme.breakpoints.down("md")]: {
+      flexDirection: "column",
+      alignItems: "center",
+    },
+  },
+  chartContainer: {
     width: "75%",
     display: "flex",
     flexDirection: "column",
@@ -78,12 +96,6 @@ const CoinInfoDialog = (props) => {
   const HistoricalChart = (id, days = 365) =>
     `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
 
-  const fetchPriceChart = async () => {
-    const { data } = await axios.get(HistoricalChart(coinDetails.id, days));
-    console.log(data, "graph ");
-    setPriceHistory(data.prices);
-    console.log(data.prices, "erm okay");
-  };
 
   const chartDays = [
     {
@@ -105,11 +117,17 @@ const CoinInfoDialog = (props) => {
   ];
 
   useEffect(() => {
+    const fetchPriceChart = async () => {
+      const { data } = await axios.get(HistoricalChart(coinDetails.id, days));
+      setPriceHistory(data.prices);
+    };
+
     fetchPriceChart();
-  }, [days]);
+    //TODO
+  }, [coinDetails.id, days]);
 
   return (
-    <Box>
+    <Grid className="container" style={{ backgroundColor: "black" }}>
       <Dialog
         fullScreen
         open={open}
@@ -136,13 +154,18 @@ const CoinInfoDialog = (props) => {
           <div>Loading...</div>
         ) : (
           <DialogContent>
-            <Box
-              display="flex"
-              // flexDirection={{ xs: "column", md: "row" }}
-              mb={1}
-              style={{ gap: "10px" }}
-            >
-              <Box flex={2}>
+            <Grid container style={{ backgroundColor: "" }}>
+              <Grid
+                xs={12}
+                md={12}
+                lg={4}
+                style={{
+                  backgroundColor: "",
+                  height: "100%",
+                  margin: 25,
+                  paddingRight: 25,
+                }}
+              >
                 <Typography
                   variant="h5"
                   component="h2"
@@ -192,9 +215,7 @@ const CoinInfoDialog = (props) => {
                 <Typography variant="h4" component="p">
                   ${coinDetails?.current_price?.toLocaleString()}
                 </Typography>
-              </Box>
 
-              <Box flex={2} width="10%">
                 <List>
                   <ListItem>
                     <ListItemText
@@ -232,31 +253,25 @@ const CoinInfoDialog = (props) => {
                     />
                   </ListItem>
                 </List>
-              </Box>
 
-              <Box flex={2}>
-                <Box display="flex" flexDirection="row">
-                  <Typography
-                    variant="h5"
-                    style={{
-                      textTransform: "uppercase",
-                      display: "inline-block",
-                    }}
-                  >
-                    {coinDetails.symbol}
-                  </Typography>
-                  <Typography variant="title" color="inherit" noWrap>
-                    &nbsp;
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    style={{ display: "inline-block", marginTop: "20px" }}
-                  >
-                    {" "}
-                    Price Statistics
-                  </Typography>
-                </Box>
-                <Typography variant="subtitle1">Price Today</Typography>
+                <Typography
+                  variant="h5"
+                  style={{
+                    textTransform: "uppercase",
+                    display: "inline-block",
+                  }}
+                >
+                  {coinDetails.symbol}
+                </Typography>
+                <Typography variant="title" color="inherit" noWrap>
+                  &nbsp;
+                </Typography>
+                <Typography
+                  variant="h5"
+                  style={{ display: "inline-block", marginTop: "20px" }}
+                >
+                  Price Statistics
+                </Typography>
                 <List>
                   <ListItem>
                     <ListItemText
@@ -317,71 +332,84 @@ const CoinInfoDialog = (props) => {
                     </Typography>
                   </ListItem>
                 </List>
+              </Grid>
 
-                <Box
-                  display="flex"
-                  flexDirection="row"
-                  justifyContent="space-between"
-                  style={{ marginTop: "20px" }}
-                >
-                  <Line
-                    data={{
-                      labels: priceHistory.map((coin) => {
-                        let date = new Date(coin[0]);
-                        let time =
-                          date.getHours() > 12
-                            ? `${date.getHours() - 12}:${date.getMinutes()} PM`
-                            : `${date.getHours()}:${date.getMinutes()} AM`;
-                        return days === 1 ? time : date.toLocaleDateString();
-                      }),
+              <Divider orientation="vertical" flexItem style={{}} />
+              <Grid
+                xs={12}
+                sm={12}
+                md={12}
+                lg={6}
+                style={{
+                  // display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 25,
+                  padding: 20,
+                  // width:100%,
+                  backgroundColor: "",
+                }}
+              >
+                <Line
+                  data={{
+                    labels: priceHistory.map((coin) => {
+                      let date = new Date(coin[0]);
+                      let time =
+                        date.getHours() > 12
+                          ? `${date.getHours() - 12}:${date.getMinutes()} PM`
+                          : `${date.getHours()}:${date.getMinutes()} AM`;
+                      return days === 1 ? time : date.toLocaleDateString();
+                    }),
 
-                      datasets: [
-                        {
-                          data: priceHistory.map((coin) => coin[1]),
-                          label: `Price ( Past ${days} Days ) `,
-                          borderColor: "#3b82f680",
-                        },
-                      ],
-                    }}
-                    options={{
-                      elements: {
-                        point: {
-                          radius: 1,
-                        },
+                    datasets: [
+                      {
+                        data: priceHistory.map((coin) => coin[1]),
+                        label: `Price ( Past ${days} Days ) `,
+                        borderColor: "#3b82f680",
                       },
-                    }}
-                  />
+                    ],
+                  }}
+                  options={{
+                    elements: {
+                      point: {
+                        radius: 1,
+                      },
+                    },
+                  }}
+                />
 
-                  <Box
-                    style={{
-                      display: "flex",
-                      marginTop: 20,
-                      justifyContent: "space-around",
-                      width: "100%",
-                    }}
-                  >
-                    {chartDays.map((day) => (
-                      <Button
-                        key={day.value}
-                        onClick={() => {
-                          setDays(day.value);
-                        }}
-                        style={{
-                          backgroundColor: days === day.value ? "#e15241" : "",
-                        }}
-                        selected={day.value === days}
-                      >
-                        {day.label}
-                      </Button>
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
+                <Grid
+                  md={12}
+                  style={{
+                    display: "flex",
+                    marginTop: 20,
+                    justifyContent: "space-around",
+                    width: "100%",
+                  }}
+                >
+                  {chartDays.map((day) => (
+                    <Button
+                      key={day.value}
+                      onClick={() => {
+                        console.log(day.value, "daydayday");
+                        setDays(day.value);
+                      }}
+                      style={{
+                        backgroundColor: days === day.value ? "#e15241" : "",
+                      }}
+                      selected={day.value === days}
+                    >
+                      {day.label}
+                    </Button>
+                  ))}
+                </Grid>
+              </Grid>
+            </Grid>
           </DialogContent>
         )}
       </Dialog>
-    </Box>
+    </Grid>
   );
 };
 
