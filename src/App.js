@@ -1,6 +1,6 @@
 import "./App.css";
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Switch from "@material-ui/core/Switch";
 import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
@@ -42,6 +42,8 @@ import Snackbar from "@material-ui/core/Snackbar";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
 import RefreshIcon from "@material-ui/icons/Refresh";
+import MuiAlert from "@material-ui/lab/Alert";
+import { ToastContainer } from "react-toastify";
 import {
   TableContainer,
   Paper,
@@ -62,6 +64,7 @@ import {
   Tooltip,
 } from "@material-ui/core";
 import LoginDialog from "./components/LoginDialog";
+import Alert from "./components/Alert";
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -106,27 +109,13 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const NightModeSwitch = withStyles({
-  switchBase: {
-    color: "orange",
-    "&$checked": {
-      color: " #0B0B45",
-    },
-    "&$checked + $track": {
-      backgroundColor: "black",
-    },
-  },
-  checked: {},
-  track: {},
-})(Switch);
-
 function App() {
   const [data, setData] = useState([]);
   const [coins, setCoins] = useState([]);
   const [currency, setCurrency] = useState("USD");
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
-  const [favourite, setFavorite] = useState([]);
+  const [favourite, setFavourite] = useState([]);
   const [openSignup, setOpenSignup] = useState(false);
   const [openLogin, setOpenLogin] = useState(false);
   const [backendData, setBackendData] = useState({});
@@ -137,6 +126,7 @@ function App() {
   const [userInfo, setUserInfo] = useState({});
   const [wishlist, setWishlist] = useState([]);
   const [selected, setSelected] = useState();
+  const tableRef = React.useRef();
 
   // const [handleSignup , setHandleSignup] = useState(false);
   const theme = createTheme({
@@ -146,7 +136,6 @@ function App() {
   });
   const classes = useStyles();
   const label = { inputProps: { "aria-label": "Checkbox demo" } };
-  // const tableRef = React.createRef();
 
   const handleChangeCurrency = (event) => {
     setCurrency(event.target.value);
@@ -170,15 +159,6 @@ function App() {
 
   const handleCloseSignUp = () => {
     setOpenSignup(false);
-  };
-
-  const handleOpenToast = () => {
-    setOpenToast(true);
-    console.log("close toast");
-  };
-
-  const handleCloseToast = (event) => {
-    setOpenToast(false);
   };
 
   const handleDisplayCoinInfo = (coin) => {
@@ -214,7 +194,6 @@ function App() {
             setData(res.data);
           });
       }
-
       setLoading(false);
     };
 
@@ -227,7 +206,9 @@ function App() {
           },
         });
         setUserInfo(data);
-        setFavorite(data?.wishlist);
+        setFavourite(data?.wishlist);
+        console.log(data, " fetched data");
+        console.log(favourite, "fetched fav");
       }
     };
 
@@ -386,24 +367,44 @@ function App() {
   ]);
 
   const handleTest = async (coin) => {
-    if (!favourite.includes(coin)) {
-      setFavorite([coin, ...favourite]);
-      await axios.post("/api/users/wishlist", {
-        coin: coin.name,
-        coin_id: coin.id,
-        user_email: userInfo.email,
-      });
+    console.log(coin, "coin");
+    console.log(favourite, " fav ");
+
+    let obj = favourite.some((x) => x === coin);
+
+    //only display when remove coin from wishlist
+    // will return undefined if add coin to wishlist
+
+    if (obj === false || obj === undefined) {
+      //check if coin is already in wishlist
+
+      //TODO: Fix issue
+      try {
+        setFavourite([coin, ...favourite]);
+        await axios.post("/api/users/wishlist", {
+          coin: coin.name,
+          coin_id: coin.id,
+          user_email: userInfo.email,
+        });
+        Alert("success", `${coin.name} added to Wishlist`);
+      } catch (err) {
+        console.log(err);
+      }
     } else {
-      setFavorite(favourite.filter((item) => item !== coin));
+      //will come here if coin !== favourite coin
+      setFavourite(favourite.filter((item) => item !== coin));
       await axios.post("/api/users/wishlist", {
         coin: coin.name,
         coin_id: coin.id,
         user_email: userInfo.email,
       });
+      Alert("info", `${coin.name} removed from Wishlist`);
     }
   };
 
   console.log(favourite, " user wishlist 2.0");
+
+  console.log(data, "table data");
 
   return (
     <ThemeProvider theme={theme}>
@@ -495,35 +496,11 @@ function App() {
             </Toolbar>
           </AppBar>
         </Box>
-
-        <Snackbar
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "left",
-          }}
-          open={handleOpenToast}
-          autoHideDuration={6000}
-          onClose={handleCloseToast}
-          message="Test"
-          action={
-            <React.Fragment>
-              <IconButton
-                size="small"
-                aria-label="close"
-                color="inherit"
-                onClick={handleCloseToast}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </React.Fragment>
-          }
-        />
-
         <div style={{ maxWidth: "100%", marginTop: "30px" }}>
           <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
             title="Cryptocurrency Prices by Market Cap"
-            // tableRef={tableRef}
+            tableRef={tableRef}
             icons={tableIcons}
             columns={coinData}
             data={data}
@@ -532,31 +509,22 @@ function App() {
               pageSizeOptions: [10, 20, 30],
             }}
             actions={[
-              {
-                icon: RefreshIcon,
-                tooltip: "Refresh Price",
-                isFreeAction: true,
-                // onClick: () => tableRef.current && tableRef.current.onQueryChange()
-              },
-
               (rowData) => {
                 const active = favourite?.find(
                   (fav) => fav.symbol === rowData.symbol
                 );
 
-                const checkWishlist = favourite?.includes(rowData.name);
+                console.log(active, " active status: ");
 
-                console.log(active, " active status ");
-                console.log(checkWishlist, "checkwishlist");
+                // const checkWishlist = favourite?.includes(rowData.name);
 
-                // userInfo?.wishlist?.includes(rowData.symbol) ||
                 return {
                   icon: () =>
-                    !checkWishlist && !active ? (
-                      <FavoriteBorderIcon />
-                    ) : (
+                    active ? (
                       //either checkwishlist or active is true
                       <Favorite style={{ color: "#e15241" }} />
+                    ) : (
+                      <FavoriteBorderIcon />
                     ),
                   onClick: (event, rowData) => {
                     handleTest(rowData);
@@ -570,6 +538,7 @@ function App() {
               },
             }}
           />
+          <ToastContainer autoClose={2000} />
         </div>
         <Footer />
       </Paper>
