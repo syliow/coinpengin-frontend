@@ -139,6 +139,7 @@ function App() {
 
   const handleChangeCurrency = (event) => {
     setCurrency(event.target.value);
+    Alert("info", `Currency changed to ${event.target.value}`);
   };
 
   const handleLogin = (event) => {
@@ -398,7 +399,7 @@ function App() {
         coin_id: coin.id,
         user_email: userInfo.email,
       });
-      Alert("info", `${coin.name} removed from Wishlist`);
+      Alert("warning", `${coin.name} removed from Wishlist`);
     }
   };
 
