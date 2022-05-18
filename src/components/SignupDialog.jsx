@@ -24,6 +24,7 @@ import { Formik } from "formik";
 import PersonIcon from "@material-ui/icons/Person";
 import FormHelperText from "@material-ui/core/FormHelperText";
 import axios from "axios";
+import Alert from "../components/Alert";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -98,7 +99,8 @@ const SignupDialog = (props) => {
         email: values.email,
         password: values.password,
       };
-      await axios.post("/api/users/signup", requestBody);
+      await axios.post("/api/users/register", requestBody);
+      Alert("success", "Registration Successful");
       handleClose();
     } catch (error) {
       console.log(error);
@@ -116,7 +118,7 @@ const SignupDialog = (props) => {
         enableReinitialize
         initialValues={initialValues}
         onSubmit={_onSubmitRefundRequest}
-        validationSchema={formValidation}
+        // validationSchema={formValidation}
         innerRef={formRef}
       >
         {({
