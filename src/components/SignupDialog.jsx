@@ -78,10 +78,6 @@ const SignupDialog = (props) => {
       .string()
       .oneOf([yup.ref("password"), null], "Passwords must match")
       .required("Confirm password is required"),
-    acceptTerms: yup
-      .boolean()
-      .oneOf([true], "You must accept the terms and conditions to sign up")
-      .required("You must accept the terms and conditions to sign up"),
   });
 
   const _handleSubmitForm = () => {
@@ -118,7 +114,7 @@ const SignupDialog = (props) => {
         enableReinitialize
         initialValues={initialValues}
         onSubmit={_onSubmitRefundRequest}
-        // validationSchema={formValidation}
+        validationSchema={formValidation}
         innerRef={formRef}
       >
         {({
@@ -228,21 +224,6 @@ const SignupDialog = (props) => {
                       />
                     </Grid>
                     <Grid item xs={12}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            // checked={checked}
-                            id="termsChecked"
-                            name="termsChecked"
-                            // onChange={handleChange}
-                            color="primary"
-                            required
-                          />
-                        }
-                        id="termsCheck"
-                        name="termsCheck"
-                        label="I agree to the terms and conditions."
-                      />
                       <FormHelperText error>
                         {errors.termsCheck ? errors.termsCheck.message : " "}
                       </FormHelperText>
