@@ -368,8 +368,9 @@ function App() {
   ]);
 
   const handleTest = async (coin) => {
-    console.log(coin, "coin");
-    console.log(favourite, " fav ");
+    if (!userInfo.id) {
+      Alert("error", "Please login to add to wishlist");
+    }
 
     let obj = favourite.some((x) => x === coin);
 
@@ -521,7 +522,7 @@ function App() {
 
                 return {
                   icon: () =>
-                    active ? (
+                    userInfo?.id && active ? (
                       //either checkwishlist or active is true
                       <Favorite style={{ color: "#e15241" }} />
                     ) : (
