@@ -369,7 +369,7 @@ function App() {
 
   const handleTest = async (coin) => {
     if (!userInfo.id) {
-      Alert("error", "Please login to add to wishlist");
+      Alert("error", "Please login to add coin to wishlist");
     }
 
     let obj = favourite.some((x) => x === coin);
