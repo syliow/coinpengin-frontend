@@ -489,7 +489,17 @@ function App() {
         <div style={{ maxWidth: "100%", marginTop: "30px" }}>
           <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
-            title="Cryptocurrency Prices by Market Cap"
+            title={
+              <Typography
+                style={{
+                  fontWeight: "bold",
+                  fontSize: 24,
+                }}
+              >
+                {" "}
+                Cryptocurrency Prices by Market Cap
+              </Typography>
+            }
             tableRef={tableRef}
             icons={tableIcons}
             columns={coinData}
