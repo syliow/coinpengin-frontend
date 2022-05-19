@@ -208,8 +208,6 @@ function App() {
         });
         setUserInfo(data);
         setFavourite(data?.wishlist);
-        console.log(data, " fetched data");
-        console.log(favourite, "fetched fav");
       }
     };
 
@@ -287,8 +285,6 @@ function App() {
       title: "Price",
       allign: "center",
       render: (row) => {
-        // console.log(currency, "why");
-
         return (
           <Box>
             {currency === "USD" ? (
@@ -299,7 +295,6 @@ function App() {
                 {row.current_price}
               </Typography>
             )}
-            {/* {row.current_price} */}
           </Box>
         );
       },
@@ -372,15 +367,9 @@ function App() {
       Alert("error", "Please login to add coin to wishlist");
     }
 
-    let obj = favourite.some((x) => x === coin);
+    let coinExists = favourite.some((x) => x.id === coin.id);
 
-    //only display when remove coin from wishlist
-    // will return undefined if add coin to wishlist
-
-    if (obj === false || obj === undefined) {
-      //check if coin is already in wishlist
-
-      //TODO: Fix issue
+    if (coinExists === false) {
       try {
         setFavourite([coin, ...favourite]);
         await axios.post("/api/users/wishlist", {
@@ -393,8 +382,9 @@ function App() {
         console.log(err);
       }
     } else {
-      //will come here if coin !== favourite coin
-      setFavourite(favourite.filter((item) => item !== coin));
+      //Note: .filter() creates a new array that contains the new value
+      const filteredCoin = favourite.filter((x) => x.id !== coin.id);
+      setFavourite(filteredCoin);
       await axios.post("/api/users/wishlist", {
         coin: coin.name,
         coin_id: coin.id,
@@ -405,8 +395,6 @@ function App() {
   };
 
   console.log(favourite, " user wishlist 2.0");
-
-  console.log(data, "table data");
 
   return (
     <ThemeProvider theme={theme}>
@@ -515,10 +503,6 @@ function App() {
                 const active = favourite?.find(
                   (fav) => fav.symbol === rowData.symbol
                 );
-
-                console.log(active, " active status: ");
-
-                // const checkWishlist = favourite?.includes(rowData.name);
 
                 return {
                   icon: () =>
