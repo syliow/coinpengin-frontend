@@ -23,6 +23,7 @@ import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import { Formik } from "formik";
 import axios from "axios";
 import * as yup from "yup";
+import Alert from "../components/Alert";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -91,13 +92,16 @@ const LoginDialog = (props) => {
           })
           .then(function (response) {
             window.localStorage.setItem("token", JSON.stringify(data.token));
+            Alert("success", "Login Successful");
           });
 
         window.location.reload();
       }
 
       handleClose();
-    } catch (error) {}
+    } catch (error) {
+      Alert("error", "Invalid email or password");
+    }
   };
 
   return (
@@ -163,10 +167,10 @@ const LoginDialog = (props) => {
                     helperText={touched.password ? errors.password : ""}
                     error={touched.password && Boolean(errors.password)}
                   />
-                  <FormControlLabel
+                  {/* <FormControlLabel
                     control={<Checkbox value="remember" color="primary" />}
                     label="Remember me"
-                  />
+                  /> */}
                   <Button
                     fullWidth
                     variant="contained"
