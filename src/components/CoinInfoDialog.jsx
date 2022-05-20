@@ -16,7 +16,7 @@ import Grid from "@material-ui/core/Grid";
 import { DialogContent } from "@material-ui/core";
 import { Line } from "react-chartjs-2";
 import moment from "moment";
-import axios from "axios";
+import { axiosInstance } from "../config";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -117,7 +117,7 @@ const CoinInfoDialog = (props) => {
 
   useEffect(() => {
     const fetchPriceChart = async () => {
-      const { data } = await axios.get(
+      const { data } = await axiosInstance.get(
         HistoricalChart(coinDetails.id, currency, days)
       );
       setPriceHistory(data.prices);

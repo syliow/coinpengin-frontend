@@ -24,6 +24,7 @@ import { Formik } from "formik";
 import axios from "axios";
 import * as yup from "yup";
 import Alert from "../components/Alert";
+import { axiosInstance } from "../config";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -81,10 +82,13 @@ const LoginDialog = (props) => {
         email: values.email,
         password: values.password,
       };
-      const { data } = await axios.post("/api/users/login", requestBody);
+      const { data } = await axiosInstance.post(
+        "/api/users/login",
+        requestBody
+      );
 
       if (data) {
-        await axios
+        await axiosInstance
           .get("/api/users/get", {
             headers: {
               Authorization: `Bearer ${data.token}`,

@@ -65,6 +65,7 @@ import {
 } from "@material-ui/core";
 import LoginDialog from "./components/LoginDialog";
 import Alert from "./components/Alert";
+import { axiosInstance } from "./config";
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -177,7 +178,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       if (currency === "MYR") {
-        axios
+        axiosInstance
           .get(
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
@@ -186,7 +187,7 @@ function App() {
             setData(res.data);
           });
       } else if (currency === "USD") {
-        axios
+        axiosInstance
           .get(
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
@@ -201,7 +202,7 @@ function App() {
     const fetchUser = async () => {
       const token = JSON.parse(window.localStorage.getItem("token"));
       if (token) {
-        const { data } = await axios.get("/api/users/get", {
+        const { data } = await axiosInstance.get("/api/users/get", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -372,7 +373,7 @@ function App() {
     if (coinExists === false) {
       try {
         setFavourite([coin, ...favourite]);
-        await axios.post("/api/users/wishlist", {
+        await axiosInstance.post("/api/users/wishlist", {
           coin: coin.name,
           coin_id: coin.id,
           user_email: userInfo.email,
@@ -385,7 +386,7 @@ function App() {
       //Note: .filter() creates a new array that contains the new value
       const filteredCoin = favourite.filter((x) => x.id !== coin.id);
       setFavourite(filteredCoin);
-      await axios.post("/api/users/wishlist", {
+      await axiosInstance.post("/api/users/wishlist", {
         coin: coin.name,
         coin_id: coin.id,
         user_email: userInfo.email,

@@ -23,7 +23,7 @@ import * as yup from "yup";
 import { Formik } from "formik";
 import PersonIcon from "@material-ui/icons/Person";
 import FormHelperText from "@material-ui/core/FormHelperText";
-import axios from "axios";
+import { axiosInstance } from "../config";
 import Alert from "../components/Alert";
 
 const useStyles = makeStyles((theme) => ({
@@ -95,7 +95,7 @@ const SignupDialog = (props) => {
         email: values.email,
         password: values.password,
       };
-      await axios.post("/api/users/register", requestBody);
+      await axiosInstance.post("/api/users/register", requestBody);
       Alert("success", "Registration Successful");
       handleClose();
     } catch (error) {
