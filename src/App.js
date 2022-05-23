@@ -183,7 +183,7 @@ function App() {
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
           .then((res) => {
-            setCurrency("MYR");
+            res.data.forEach((node) => (node.vs_currency = currency));
             setData(res.data);
           });
       } else if (currency === "USD") {
@@ -192,7 +192,7 @@ function App() {
             "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
           )
           .then((res) => {
-            setCurrency("USD");
+            res.data.forEach((node) => (node.vs_currency = currency));
             setData(res.data);
           });
       }
@@ -231,17 +231,7 @@ function App() {
       field: "index",
       sorting: "false",
       allign: "center",
-      render: (rowData) => (
-        <div>
-          {/* <Checkbox
-            {...label}
-            icon={<FavoriteBorderIcon />}
-            checkedIcon={<Favorite />}
-            onClick={() => handleAddCoinToFavourite(rowData)}
-          /> */}
-          {rowData.market_cap_rank}
-        </div>
-      ),
+      render: (rowData) => <Box>{rowData.market_cap_rank}</Box>,
     },
     {
       field: "name",
@@ -288,14 +278,10 @@ function App() {
       render: (row) => {
         return (
           <Box>
-            {currency === "USD" ? (
-              <Typography variant="body2">${row.current_price}</Typography>
-            ) : (
-              <Typography variant="body2">
-                MYR
-                {row.current_price}
-              </Typography>
-            )}
+            <Typography variant="body2">
+              {row?.vs_currency === "USD" ? "$" : "RM"}
+              {row.current_price}
+            </Typography>
           </Box>
         );
       },
@@ -305,7 +291,7 @@ function App() {
       title: "24h Change",
       render: (row) => {
         return (
-          <div>
+          <Box>
             <Typography
               style={
                 row.price_change_percentage_24h > 0
@@ -315,7 +301,7 @@ function App() {
             >
               {row.price_change_percentage_24h.toFixed(1)}%
             </Typography>
-          </div>
+          </Box>
         );
       },
     },
@@ -323,27 +309,14 @@ function App() {
       field: "total_volume",
       title: "24h Volume",
       render: (row) => {
-        if (currency === "USD") {
-          return (
-            <div>
-              {row.total_volume.toLocaleString("en-RM", {
-                style: "currency",
-                currency: currency,
-                minimumFractionDigits: 0,
-              })}
-            </div>
-          );
-        } else {
-          return (
-            <div>
-              {row.total_volume.toLocaleString("en-US", {
-                style: "currency",
-                currency: currency,
-                minimumFractionDigits: 0,
-              })}
-            </div>
-          );
-        }
+        return (
+          <Box>
+            <Typography variant="body2">
+              {row.vs_currency === "USD" ? "$" : "RM"}
+              {row.total_volume.toLocaleString()}
+            </Typography>
+          </Box>
+        );
       },
     },
     {
@@ -351,13 +324,12 @@ function App() {
       title: "Market Cap",
       render: (row) => {
         return (
-          <div>
-            {row.market_cap.toLocaleString("en-US", {
-              style: "currency",
-              currency: currency,
-              minimumFractionDigits: 0,
-            })}
-          </div>
+          <Box>
+            <Typography variant="body2">
+              {row.vs_currency === "USD" ? "$" : "RM"}
+              {row.market_cap.toLocaleString()}
+            </Typography>
+          </Box>
         );
       },
     },
@@ -437,11 +409,10 @@ function App() {
                 </Button>
               </Box>
               <Select
-                labelId="demo-simple-select-label"
-                id="demo-simple-select"
+                variant="outlined"
                 value={currency}
                 onChange={handleChangeCurrency}
-                style={{ width: 100, marginRight: 15 }}
+                style={{ width: 100, marginRight: 15, height: 40 }}
               >
                 {currencyOptions.map((option) => (
                   <MenuItem value={option.value}>{option.label}</MenuItem>
@@ -487,7 +458,7 @@ function App() {
             </Toolbar>
           </AppBar>
         </Box>
-        <div style={{ maxWidth: "100%", marginTop: "30px" }}>
+        <Box style={{ maxWidth: "100%", marginTop: "30px" }}>
           <Box display="flex" justifyContent="center" alignItems="center"></Box>
           <MaterialTable
             title={
@@ -536,7 +507,7 @@ function App() {
             }}
           />
           <ToastContainer autoClose={2000} />
-        </div>
+        </Box>
         <Footer />
       </Paper>
 
