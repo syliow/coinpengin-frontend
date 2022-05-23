@@ -82,6 +82,17 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const displayCurrency = (currency) => {
+  switch (currency) {
+    case "USD":
+      return "$";
+    case "MYR":
+      return "RM";
+    default:
+      return "$";
+  }
+};
+
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="down" ref={ref} {...props} />;
 });
@@ -125,8 +136,8 @@ const CoinInfoDialog = (props) => {
 
     fetchPriceChart();
     //TODO
-  }, [open, coinDetails.id, days]);
-
+  }, [open, coinDetails.id, days, currency]);
+  
   return (
     <Grid className="container" style={{ backgroundColor: "black" }}>
       <Dialog
@@ -214,7 +225,8 @@ const CoinInfoDialog = (props) => {
                   {coinDetails?.price_change_percentage_24h?.toFixed(1)}%
                 </Typography>
                 <Typography variant="h4" component="p">
-                  ${coinDetails?.current_price?.toLocaleString()}
+                  {displayCurrency(currency)}
+                  {coinDetails?.current_price}
                 </Typography>
 
                 <List>
@@ -277,7 +289,18 @@ const CoinInfoDialog = (props) => {
                   <ListItem>
                     <ListItemText
                       primary={`${coinDetails.name} Price`}
-                      secondary={`$${coinDetails.current_price}`}
+                      secondary={
+                        <React.Fragment>
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            style={{ display: "inline-block" }}
+                          >
+                            {displayCurrency(currency)}
+                          </Typography>
+                          {coinDetails?.current_price}
+                        </React.Fragment>
+                      }
                     />
                   </ListItem>
                   <Divider />
@@ -291,14 +314,28 @@ const CoinInfoDialog = (props) => {
                   <ListItem>
                     <ListItemText
                       primary="24h Low / 24h High"
-                      secondary={`$${coinDetails.low_24h} / $${coinDetails.high_24h}`}
+                      secondary={
+                        <React.Fragment>
+                          <Typography component="span" variant="body2">
+                            {displayCurrency(currency)}
+                          </Typography>
+                          {`${coinDetails?.low_24h} / ${coinDetails?.high_24h}`}
+                        </React.Fragment>
+                      }
                     />
                   </ListItem>
                   <Divider />
                   <ListItem>
                     <ListItemText
                       primary="All-Time High"
-                      secondary={`$${coinDetails.ath} `}
+                      secondary={
+                        <React.Fragment>
+                          <Typography component="span" variant="body2">
+                            {displayCurrency(currency)}
+                          </Typography>
+                          {coinDetails?.ath}
+                        </React.Fragment>
+                      }
                     />
                     <Typography variant="subtitle">
                       {moment(coinDetails.ath_date).format("MMM Do YYYY")}
@@ -317,7 +354,14 @@ const CoinInfoDialog = (props) => {
                   <ListItem>
                     <ListItemText
                       primary="All-Time Low"
-                      secondary={`$${coinDetails.atl}`}
+                      secondary={
+                        <React.Fragment>
+                          <Typography component="span" variant="body2">
+                            {displayCurrency(currency)}
+                          </Typography>
+                          {coinDetails?.atl}
+                        </React.Fragment>
+                      }
                     />
                     <Typography variant="subtitle">
                       {moment(coinDetails.atl_date).format("MMM Do YYYY")}
