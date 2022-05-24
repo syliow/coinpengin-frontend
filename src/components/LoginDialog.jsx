@@ -24,6 +24,7 @@ import { Formik } from "formik";
 import axios from "axios";
 import * as yup from "yup";
 import Alert from "../components/Alert";
+import LinearProgress from "@material-ui/core/LinearProgress";
 import { axiosInstance } from "../config";
 
 const useStyles = makeStyles((theme) => ({
@@ -48,6 +49,7 @@ const useStyles = makeStyles((theme) => ({
 
 const LoginDialog = (props) => {
   const { open, handleClose, handleExited } = props;
+  const [isLoading, setIsLoading] = useState(false);
   const classes = useStyles();
   const formRef = useRef(null);
 
@@ -82,6 +84,7 @@ const LoginDialog = (props) => {
         email: values.email,
         password: values.password,
       };
+      setIsLoading(true);
       const { data } = await axiosInstance.post(
         "/api/users/login",
         requestBody
@@ -100,10 +103,12 @@ const LoginDialog = (props) => {
           });
 
         window.location.reload();
+        setIsLoading(false);
       }
 
       handleClose();
     } catch (error) {
+      setIsLoading(false);
       Alert("error", "Invalid email or password");
     }
   };
@@ -133,6 +138,7 @@ const LoginDialog = (props) => {
           return (
             <Container component="main" maxWidth="xs">
               <CssBaseline />
+              {isLoading ? <LinearProgress /> : ""}
               <div className={classes.paper}>
                 <Avatar className={classes.avatar}>
                   <ExitToAppIcon />
@@ -170,6 +176,7 @@ const LoginDialog = (props) => {
                     onBlur={handleBlur}
                     helperText={touched.password ? errors.password : ""}
                     error={touched.password && Boolean(errors.password)}
+                    style={{ marginTop: "10px" }}
                   />
                   {/* <FormControlLabel
                     control={<Checkbox value="remember" color="primary" />}
@@ -182,10 +189,11 @@ const LoginDialog = (props) => {
                     className={classes.submit}
                     loading={isSubmitting}
                     onClick={_handleSubmitForm}
+                    disabled={isLoading === true ? true : false}
                   >
                     Sign In
                   </Button>
-                  <Grid container>
+                  {/* <Grid container>
                     <Grid item xs>
                       <Link
                         href="#"
@@ -200,7 +208,7 @@ const LoginDialog = (props) => {
                         {"Don't have an account? Sign Up"}
                       </Link>
                     </Grid>
-                  </Grid>
+                  </Grid> */}
                 </form>
               </div>
             </Container>
