@@ -25,6 +25,7 @@ import PersonIcon from "@material-ui/icons/Person";
 import FormHelperText from "@material-ui/core/FormHelperText";
 import { axiosInstance } from "../config";
 import Alert from "../components/Alert";
+import LinearProgress from "@material-ui/core/LinearProgress";
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -49,6 +50,7 @@ const useStyles = makeStyles((theme) => ({
 const SignupDialog = (props) => {
   const { open, handleClose, handleExited } = props;
   const [checked, setChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef(null);
   const classes = useStyles();
 
@@ -65,10 +67,7 @@ const SignupDialog = (props) => {
       .string()
       .required("First name is required")
       .matches(/^[a-zA-Z]*$/, "First name must be letters only"),
-    lastName: yup
-      .string()
-      .required("Last name is required")
-      .matches(/^[a-zA-Z]*$/, "Last name must be letters only"),
+    lastName: yup.string().required("Last name is required"),
     email: yup.string().email("Email is invalid").required("Email is required"),
     password: yup
       .string()
@@ -95,11 +94,15 @@ const SignupDialog = (props) => {
         email: values.email,
         password: values.password,
       };
+      setIsLoading(true);
       await axiosInstance.post("/api/users/register", requestBody);
+      setIsLoading(false);
       Alert("success", "Registration Successful");
       handleClose();
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
+      Alert("error", "User already exists");
     }
   };
 
@@ -117,17 +120,11 @@ const SignupDialog = (props) => {
         validationSchema={formValidation}
         innerRef={formRef}
       >
-        {({
-          handleSubmit,
-          isSubmitting,
-          handleChange,
-          handleBlur,
-          touched,
-          errors,
-        }) => {
+        {({ handleSubmit, handleChange, handleBlur, touched, errors }) => {
           return (
             <Container component="main" maxWidth="xs">
               <CssBaseline />
+              {isLoading ? <LinearProgress /> : ""}
               <div className={classes.paper}>
                 <Avatar className={classes.avatar}>
                   <PersonIcon />
@@ -234,12 +231,12 @@ const SignupDialog = (props) => {
                     variant="contained"
                     color="primary"
                     className={classes.submit}
-                    loading={isSubmitting}
                     onClick={_handleSubmitForm}
+                    disabled={isLoading === true ? true : false}
                   >
                     Sign Up
                   </Button>
-                  <Grid container justifyContent="flex-end">
+                  {/* <Grid container justifyContent="flex-end">
                     <Grid item>
                       <Link
                         href="#"
@@ -249,7 +246,7 @@ const SignupDialog = (props) => {
                         Already have an account? Sign in
                       </Link>
                     </Grid>
-                  </Grid>
+                  </Grid> */}
                 </form>
               </div>
               <Box mt={5}></Box>
