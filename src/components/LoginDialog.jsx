@@ -78,19 +78,22 @@ const LoginDialog = (props) => {
 
   const _onSubmitRefundRequest = async (values) => {
     try {
-      console.log(values, "erm ?");
+      console.log("Attempting login with:", { email: values.email });
       let requestBody = {};
       requestBody = {
         email: values.email,
         password: values.password,
       };
       setIsLoading(true);
+      console.log("Sending request to:", "/api/users/login");
       const { data } = await axiosInstance.post(
         "/api/users/login",
         requestBody
       );
+      console.log("Login response:", data);
 
       if (data) {
+        console.log("Fetching user data with token");
         await axiosInstance
           .get("/api/users/get", {
             headers: {
@@ -98,6 +101,7 @@ const LoginDialog = (props) => {
             },
           })
           .then(function (response) {
+            console.log("User data response:", response.data);
             window.localStorage.setItem("token", JSON.stringify(data.token));
             Alert("success", "Login Successful");
           });
@@ -108,6 +112,11 @@ const LoginDialog = (props) => {
 
       handleClose();
     } catch (error) {
+      console.error("Login error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       setIsLoading(false);
       Alert("error", "Invalid email or password");
     }
