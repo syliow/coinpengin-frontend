@@ -131,10 +131,10 @@ function App() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-lg bg-white dark:bg-gray-800 p-1.5 flex items-center justify-center">
+              <div className="h-10 w-10 flex items-center justify-center">
                 <img src={logo} alt="CoinPengin" className="h-full w-full object-contain" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent tracking-tight">
                 CoinPengin
               </span>
             </div>
