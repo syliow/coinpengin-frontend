@@ -1,22 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { makeStyles } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
-import Dialog from "@material-ui/core/Dialog";
-import ListItemText from "@material-ui/core/ListItemText";
-import ListItem from "@material-ui/core/ListItem";
-import List from "@material-ui/core/List";
-import Divider from "@material-ui/core/Divider";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import Typography from "@material-ui/core/Typography";
-import CloseIcon from "@material-ui/icons/Close";
-import Slide from "@material-ui/core/Slide";
-import Grid from "@material-ui/core/Grid";
-import { DialogContent } from "@material-ui/core";
-import { Line } from "react-chartjs-2";
-import moment from "moment";
-import { axiosInstance } from "../config";
+import React, { useEffect, useState, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import { Line } from 'react-chartjs-2';
+import { fetchHistoricalChart } from '../api/coingecko';
+import { formatCurrency, formatNumber, formatDate } from '../helpers/formatters';
+import { CHART_DAYS } from '../helpers/constants';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,8 +14,10 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
+  Filler,
+} from 'chart.js';
 
+// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -35,426 +25,292 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
-moment().format();
-const useStyles = makeStyles((theme) => ({
-  appBar: {
-    position: "relative",
-  },
-  title: {
-    marginLeft: theme.spacing(2),
-    flex: 1,
-  },
-  sideBar: {
-    width: "30%",
-    [theme.breakpoints.down("md")]: {
-      width: "100%",
-    },
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginTop: 25,
-    borderRight: "2px solid grey",
-  },
-  container: {
-    display: "flex",
-    [theme.breakpoints.down("md")]: {
-      flexDirection: "column",
-      alignItems: "center",
-    },
-  },
-  chartContainer: {
-    width: "75%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 25,
-    padding: 40,
-    [theme.breakpoints.down("md")]: {
-      width: "100%",
-      marginTop: 0,
-      padding: 20,
-      paddingTop: 0,
-    },
-  },
-}));
+const CoinInfoDialog = ({ open, handleClose, coinDetails, currency }) => {
+  const [chartData, setChartData] = useState([]);
+  const [selectedDays, setSelectedDays] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const displayCurrency = (currency) => {
-  switch (currency) {
-    case "USD":
-      return "$";
-    case "MYR":
-      return "RM";
-    default:
-      return "$";
-  }
-};
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="down" ref={ref} {...props} />;
-});
-
-const CoinInfoDialog = (props) => {
-  const { open, handleClose, handleExited, coinDetails, currency } = props;
-  const [priceHistory, setPriceHistory] = useState([]);
-  const [days, setDays] = useState(1);
-  const classes = useStyles();
-  // const [open, setOpen] = React.useState(false);
-
-  const HistoricalChart = (id, currency, days = 365) =>
-    `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${currency}&days=${days}`;
-
-  const chartDays = [
-    {
-      label: "24 Hours",
-      value: 1,
-    },
-    {
-      label: "30 Days",
-      value: 30,
-    },
-    {
-      label: "3 Months",
-      value: 90,
-    },
-    {
-      label: "1 Year",
-      value: 365,
-    },
-  ];
-
+  // Fetch historical chart data
   useEffect(() => {
-    const fetchPriceChart = async () => {
-      const { data } = await axiosInstance.get(
-        HistoricalChart(coinDetails.id, currency, days)
-      );
-      setPriceHistory(data.prices);
+    const fetchChartData = async () => {
+      if (!coinDetails?.id || !open) {
+        setChartData([]);
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        setChartData([]); // Clear previous data while loading
+        const data = await fetchHistoricalChart(coinDetails.id, currency.toLowerCase(), selectedDays);
+        if (data && data.prices && data.prices.length > 0) {
+          setChartData(data.prices);
+        } else {
+          setChartData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+        setError(error.message || 'Failed to fetch chart data');
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchPriceChart();
-    //TODO
-  }, [open, coinDetails.id, days, currency]);
-  
+    fetchChartData();
+  }, [coinDetails?.id, currency, selectedDays, open]);
+
+  // Format chart labels and data
+  const formatChartLabels = (data) => {
+    return data.map((item) => {
+      const date = new Date(item[0]);
+      if (selectedDays === 1) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxTicksLimit: 8,
+          color: '#8B949E',
+        },
+      },
+      y: {
+        grid: {
+          color: 'rgba(139, 148, 158, 0.1)',
+        },
+        ticks: {
+          color: '#8B949E',
+        },
+      },
+    },
+    elements: {
+      point: {
+        radius: 0,
+      },
+      line: {
+        tension: 0.1,
+      },
+    },
+  };
+
+  const lineChartData = {
+    labels: formatChartLabels(chartData),
+    datasets: [
+      {
+        data: chartData.map((item) => item[1]),
+        borderColor: coinDetails?.price_change_percentage_24h >= 0 ? '#00B8A9' : '#F46036',
+        backgroundColor: coinDetails?.price_change_percentage_24h >= 0 
+          ? 'rgba(0, 184, 169, 0.1)' 
+          : 'rgba(244, 96, 54, 0.1)',
+        fill: true,
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const priceChangeColor = coinDetails?.price_change_percentage_24h >= 0 
+    ? 'text-accent-green' 
+    : 'text-accent-red';
+
   return (
-    <Grid className="container" style={{ backgroundColor: "black" }}>
-      <Dialog
-        fullScreen
-        open={open}
-        onClose={handleClose}
-        TransitionComponent={Transition}
-      >
-        <AppBar className={classes.appBar}>
-          <Toolbar>
-            <Typography variant="h6" className={classes.title}>
-              {coinDetails.name} Details
-            </Typography>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={handleClose}
-              aria-label="close"
+    <Transition appear show={open} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={handleClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              <CloseIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-light-bg-secondary dark:bg-dark-bg-secondary p-6 shadow-xl transition-all">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={coinDetails?.image}
+                      alt={coinDetails?.name}
+                      className="h-12 w-12 rounded-full"
+                    />
+                    <div>
+                      <Dialog.Title className="text-2xl font-bold flex items-center gap-3">
+                        {coinDetails?.name}
+                        <span className="text-sm font-normal text-gray-500 uppercase">
+                          {coinDetails?.symbol}
+                        </span>
+                      </Dialog.Title>
+                      <div className="flex items-center space-x-3 mt-1">
+                        <span className="text-xl font-semibold">
+                          {formatCurrency(coinDetails?.current_price, currency)}
+                        </span>
+                        <span className={`font-medium ${priceChangeColor}`}>
+                          {coinDetails?.price_change_percentage_24h >= 0 ? '+' : ''}
+                          {coinDetails?.price_change_percentage_24h?.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
 
-        {!priceHistory ? (
-          <div>Loading...</div>
-        ) : (
-          <DialogContent>
-            <Grid container style={{ backgroundColor: "" }}>
-              <Grid
-                xs={12}
-                md={12}
-                lg={4}
-                style={{
-                  backgroundColor: "",
-                  height: "100%",
-                  margin: 25,
-                  paddingRight: 25,
-                }}
-              >
-                <Typography
-                  variant="h5"
-                  component="h2"
-                  style={{ display: "inline-block" }}
-                >
-                  <img
-                    src={coinDetails.image}
-                    alt={coinDetails.name}
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      marginRight: "10px",
-                      marginTop: "10px",
-                    }}
-                  />
-                  {coinDetails.name}
-                </Typography>
-                <Typography variant="title" color="inherit" noWrap>
-                  &nbsp;
-                </Typography>
-                <Typography
-                  variant="h6"
-                  style={{
-                    textTransform: "uppercase",
-                    display: "inline-block",
-                  }}
-                >
-                  ({coinDetails?.symbol})
-                </Typography>
-                <Typography
-                  style={
-                    coinDetails.price_change_percentage_24h > 0
-                      ? {
-                          color: "#8dc647",
-                          display: "inline-block",
-                          marginLeft: "10px",
-                        }
-                      : {
-                          color: "#e15241",
-                          display: "inline-block",
-                          marginLeft: "10px",
-                        }
-                  }
-                >
-                  {coinDetails?.price_change_percentage_24h?.toFixed(1)}%
-                </Typography>
-                <Typography variant="h4" component="p">
-                  {displayCurrency(currency)}
-                  {coinDetails?.current_price}
-                </Typography>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Chart Section */}
+                  <div className="lg:col-span-2">
+                    {/* Time Range Buttons */}
+                    <div className="flex space-x-2 mb-4">
+                      {CHART_DAYS.map((day) => (
+                        <button
+                          key={day.value}
+                          onClick={() => setSelectedDays(day.value)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                            selectedDays === day.value
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
 
-                <List>
-                  <ListItem>
-                    <ListItemText
-                      primary="Market Cap"
-                      secondary={`$${coinDetails?.market_cap?.toLocaleString()}`}
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="Total Supply"
-                      secondary={`${
-                        coinDetails?.total_supply
-                          ? coinDetails?.total_supply?.toLocaleString()
-                          : "-"
-                      }`}
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="Max Supply"
-                      secondary={`${
-                        coinDetails?.max_supply
-                          ? coinDetails?.max_supply?.toLocaleString()
-                          : "-"
-                      }`}
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="Circulating Supply"
-                      secondary={`${coinDetails?.circulating_supply?.toLocaleString()}`}
-                    />
-                  </ListItem>
-                </List>
+                    {/* Chart */}
+                    <div className="h-80 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+                      {loading ? (
+                        <div className="h-full flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        </div>
+                      ) : error ? (
+                        <div className="h-full flex items-center justify-center text-accent-red text-center px-4">
+                          {error}
+                        </div>
+                      ) : chartData.length > 0 ? (
+                        <Line data={lineChartData} options={chartOptions} />
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-gray-500">
+                          No chart data available
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                <Typography
-                  variant="h5"
-                  style={{
-                    textTransform: "uppercase",
-                    display: "inline-block",
-                  }}
-                >
-                  {coinDetails.symbol}
-                </Typography>
-                <Typography variant="title" color="inherit" noWrap>
-                  &nbsp;
-                </Typography>
-                <Typography
-                  variant="h5"
-                  style={{ display: "inline-block", marginTop: "20px" }}
-                >
-                  Price Statistics
-                </Typography>
-                <List>
-                  <ListItem>
-                    <ListItemText
-                      primary={`${coinDetails.name} Price`}
-                      secondary={
-                        <React.Fragment>
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            style={{ display: "inline-block" }}
-                          >
-                            {displayCurrency(currency)}
-                          </Typography>
-                          {coinDetails?.current_price}
-                        </React.Fragment>
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="Market Cap Rank"
-                      secondary={`#${coinDetails.market_cap_rank}`}
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="24h Low / 24h High"
-                      secondary={
-                        <React.Fragment>
-                          <Typography component="span" variant="body2">
-                            {displayCurrency(currency)}
-                          </Typography>
-                          {`${coinDetails?.low_24h} / ${coinDetails?.high_24h}`}
-                        </React.Fragment>
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="All-Time High"
-                      secondary={
-                        <React.Fragment>
-                          <Typography component="span" variant="body2">
-                            {displayCurrency(currency)}
-                          </Typography>
-                          {coinDetails?.ath}
-                        </React.Fragment>
-                      }
-                    />
-                    <Typography variant="subtitle">
-                      {moment(coinDetails.ath_date).format("MMM Do YYYY")}
-                    </Typography>
-                    <Typography variant="title" color="inherit" noWrap>
-                      &nbsp;
-                    </Typography>
-                    <Typography
-                      variant="subtitle "
-                      style={{ fontWeight: 600, color: "#e15241" }}
-                    >
-                      ({coinDetails.ath_change_percentage}%)
-                    </Typography>
-                  </ListItem>
-                  <Divider />
-                  <ListItem>
-                    <ListItemText
-                      primary="All-Time Low"
-                      secondary={
-                        <React.Fragment>
-                          <Typography component="span" variant="body2">
-                            {displayCurrency(currency)}
-                          </Typography>
-                          {coinDetails?.atl}
-                        </React.Fragment>
-                      }
-                    />
-                    <Typography variant="subtitle">
-                      {moment(coinDetails.atl_date).format("MMM Do YYYY")}
-                    </Typography>
-                    <Typography variant="title" color="inherit" noWrap>
-                      &nbsp;
-                    </Typography>
-                    <Typography
-                      variant="subtitle"
-                      style={{ fontWeight: 600, color: "#8dc647" }}
-                    >
-                      ({coinDetails.atl_change_percentage}%)
-                    </Typography>
-                  </ListItem>
-                </List>
-              </Grid>
-
-              <Divider orientation="vertical" flexItem style={{}} />
-              <Grid
-                xs={12}
-                sm={12}
-                md={12}
-                lg={6}
-                style={{
-                  // display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: 25,
-                  padding: 20,
-                  // width:100%,
-                  backgroundColor: "",
-                }}
-              >
-                <Line
-                  data={{
-                    labels: priceHistory.map((coin) => {
-                      let date = new Date(coin[0]);
-                      let time =
-                        date.getHours() > 12
-                          ? `${date.getHours() - 12}:${date.getMinutes()} PM`
-                          : `${date.getHours()}:${date.getMinutes()} AM`;
-                      return days === 1 ? time : date.toLocaleDateString();
-                    }),
-
-                    datasets: [
-                      {
-                        data: priceHistory.map((coin) => coin[1]),
-                        label: `Price ( Past ${days} Days ) `,
-                        borderColor: "#3b82f680",
-                      },
-                    ],
-                  }}
-                  options={{
-                    elements: {
-                      point: {
-                        radius: 1,
-                      },
-                    },
-                  }}
-                />
-
-                <Grid
-                  md={12}
-                  style={{
-                    display: "flex",
-                    marginTop: 20,
-                    justifyContent: "space-around",
-                    width: "100%",
-                  }}
-                >
-                  {chartDays.map((day) => (
-                    <Button
-                      key={day.value}
-                      onClick={() => {
-                        console.log(day.value, "daydayday");
-                        setDays(day.value);
-                      }}
-                      style={{
-                        backgroundColor: days === day.value ? "#e15241" : "",
-                      }}
-                      selected={day.value === days}
-                    >
-                      {day.label}
-                    </Button>
-                  ))}
-                </Grid>
-              </Grid>
-            </Grid>
-          </DialogContent>
-        )}
+                  {/* Stats Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Market Data</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">Market Cap Rank</span>
+                        <span className="font-medium">#{coinDetails?.market_cap_rank}</span>
+                      </div>
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">Market Cap</span>
+                        <span className="font-medium">{formatCurrency(coinDetails?.market_cap, currency)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">24h Volume</span>
+                        <span className="font-medium">{formatCurrency(coinDetails?.total_volume, currency)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">24h High</span>
+                        <span className="font-medium text-accent-green">{formatCurrency(coinDetails?.high_24h, currency)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">24h Low</span>
+                        <span className="font-medium text-accent-red">{formatCurrency(coinDetails?.low_24h, currency)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">Circulating Supply</span>
+                        <span className="font-medium">{formatNumber(coinDetails?.circulating_supply, 0)}</span>
+                      </div>
+                      
+                      {coinDetails?.total_supply && (
+                        <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                          <span className="text-gray-500">Total Supply</span>
+                          <span className="font-medium">{formatNumber(coinDetails?.total_supply, 0)}</span>
+                        </div>
+                      )}
+                      
+                      {coinDetails?.max_supply && (
+                        <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                          <span className="text-gray-500">Max Supply</span>
+                          <span className="font-medium">{formatNumber(coinDetails?.max_supply, 0)}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500">All-Time High</span>
+                        <div className="text-right">
+                          <span className="font-medium">{formatCurrency(coinDetails?.ath, currency)}</span>
+                          <div className="text-xs text-gray-500">{formatDate(coinDetails?.ath_date)}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-500">All-Time Low</span>
+                        <div className="text-right">
+                          <span className="font-medium">{formatCurrency(coinDetails?.atl, currency)}</span>
+                          <div className="text-xs text-gray-500">{formatDate(coinDetails?.atl_date)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
       </Dialog>
-    </Grid>
+    </Transition>
   );
 };
 

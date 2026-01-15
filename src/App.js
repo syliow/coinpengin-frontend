@@ -1,525 +1,450 @@
-import "./App.css";
-import React from "react";
-import { useEffect, useState, useRef } from "react";
-import Switch from "@material-ui/core/Switch";
-import axios from "axios";
-import { makeStyles } from "@material-ui/core/styles";
-import MaterialTable from "material-table";
-import { forwardRef } from "react";
-import AddBox from "@material-ui/icons/AddBox";
-import ArrowDownward from "@material-ui/icons/ArrowDownward";
-import Check from "@material-ui/icons/Check";
-import ChevronLeft from "@material-ui/icons/ChevronLeft";
-import ChevronRight from "@material-ui/icons/ChevronRight";
-import Clear from "@material-ui/icons/Clear";
-import DeleteOutline from "@material-ui/icons/DeleteOutline";
-import Edit from "@material-ui/icons/Edit";
-import FilterList from "@material-ui/icons/FilterList";
-import FirstPage from "@material-ui/icons/FirstPage";
-import LastPage from "@material-ui/icons/LastPage";
-import Remove from "@material-ui/icons/Remove";
-import SaveAlt from "@material-ui/icons/SaveAlt";
-import Search from "@material-ui/icons/Search";
-import ViewColumn from "@material-ui/icons/ViewColumn";
-import FormControl from "@material-ui/core/FormControl";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
-import InputLabel from "@material-ui/core/InputLabel";
-import { withStyles } from "@material-ui/core/styles";
-import { Autocomplete } from "@material-ui/lab";
-import Favorite from "@material-ui/icons/Favorite";
-import { Divider } from "@material-ui/core";
-import logo from "../src/images/Logo.png";
-import Footer from "./components/Footer";
-import FavoriteIcon from "@material-ui/icons/Favorite";
-import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
-import Brightness2Icon from "@material-ui/icons/Brightness2";
-import Brightness7Icon from "@material-ui/icons/Brightness7";
-import { createTheme, ThemeProvider } from "@material-ui/core/styles";
-import SignupDialog from "./components/SignupDialog";
-import CoinInfoDialog from "./components/CoinInfoDialog";
-import Snackbar from "@material-ui/core/Snackbar";
-import IconButton from "@material-ui/core/IconButton";
-import CloseIcon from "@material-ui/icons/Close";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import MuiAlert from "@material-ui/lab/Alert";
-import { ToastContainer } from "react-toastify";
-import {
-  TableContainer,
-  Paper,
-  TableBody,
-  TableRow,
-  TableCell,
-  Table,
-  TableHead,
-  Typography,
-  ListItemText,
-  TextField,
-  Box,
-  Button,
-  AppBar,
-  Toolbar,
-  Checkbox,
-  Avatar,
-  Tooltip,
-} from "@material-ui/core";
-import LoginDialog from "./components/LoginDialog";
-import Alert from "./components/Alert";
-import { axiosInstance } from "./config";
-
-const tableIcons = {
-  Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
-  Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
-  Clear: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
-  Delete: forwardRef((props, ref) => <DeleteOutline {...props} ref={ref} />),
-  DetailPanel: forwardRef((props, ref) => (
-    <ChevronRight {...props} ref={ref} />
-  )),
-  Edit: forwardRef((props, ref) => <Edit {...props} ref={ref} />),
-  Export: forwardRef((props, ref) => <SaveAlt {...props} ref={ref} />),
-  Filter: forwardRef((props, ref) => <FilterList {...props} ref={ref} />),
-  FirstPage: forwardRef((props, ref) => <FirstPage {...props} ref={ref} />),
-  LastPage: forwardRef((props, ref) => <LastPage {...props} ref={ref} />),
-  NextPage: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
-  PreviousPage: forwardRef((props, ref) => (
-    <ChevronLeft {...props} ref={ref} />
-  )),
-  ResetSearch: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
-  Search: forwardRef((props, ref) => <Search {...props} ref={ref} />),
-  SortArrow: forwardRef((props, ref) => <ArrowDownward {...props} ref={ref} />),
-  ThirdStateCheck: forwardRef((props, ref) => <Remove {...props} ref={ref} />),
-  ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
-};
-
-const currencyOptions = [
-  { label: "USD", value: "USD" },
-  { label: "RM", value: "MYR" },
-];
-
-const useStyles = makeStyles((theme) => ({
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-  },
-  selectEmpty: {
-    marginTop: theme.spacing(2),
-  },
-
-  nightModeButton: {
-    flexGrow: 1,
-  },
-}));
+import React, { useEffect, useState } from 'react';
+import { useAuth } from './contexts/AuthContext';
+import { useTheme } from './contexts/ThemeContext';
+import { fetchMarketData } from './api/coingecko';
+import { updateWishlist } from './api/backend';
+import { cooldownManager } from './helpers/rateLimit';
+import { formatCurrency, formatPercentage, getChangeColor } from './helpers/formatters';
+import { CURRENCY_OPTIONS } from './helpers/constants';
+import { toast } from 'react-toastify';
+import { SunIcon, MoonIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
+import logo from './images/Logo.png';
+import CoinInfoDialog from './components/CoinInfoDialog';
+import LoginDialog from './components/LoginDialog';
+import SignupDialog from './components/SignupDialog';
 
 function App() {
-  const [data, setData] = useState([]);
-  const [coins, setCoins] = useState([]);
-  const [currency, setCurrency] = useState("USD");
+  const { user, isAuthenticated, wishlist, logout, updateWishlist: setWishlist } = useAuth();
+  const { darkMode, toggleTheme } = useTheme();
+  
+  const [marketData, setMarketData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
-  const [favourite, setFavourite] = useState([]);
-  const [openSignup, setOpenSignup] = useState(false);
-  const [openLogin, setOpenLogin] = useState(false);
-  const [backendData, setBackendData] = useState({});
-  const [openCoinInfo, setOpenCoinInfo] = useState(false);
-  const [coinDetails, setCoinDetails] = useState({});
-  const [isLogged, setisLogged] = useState(false);
-  const [openToast, setOpenToast] = useState(false);
-  const [userInfo, setUserInfo] = useState({});
-  const [wishlist, setWishlist] = useState([]);
-  const [selected, setSelected] = useState();
-  const tableRef = React.useRef();
+  const [currency, setCurrency] = useState('USD');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [selectedCoin, setSelectedCoin] = useState(null);
+  const [showCoinDialog, setShowCoinDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showSignupDialog, setShowSignupDialog] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
 
-  // const [handleSignup , setHandleSignup] = useState(false);
-  const theme = createTheme({
-    palette: {
-      type: darkMode ? "dark" : "light",
-    },
-  });
-  const classes = useStyles();
-  const label = { inputProps: { "aria-label": "Checkbox demo" } };
-
-  const handleChangeCurrency = (event) => {
-    setCurrency(event.target.value);
-    Alert("info", `Currency changed to ${event.target.value}`);
+  // Handle column sorting
+  const handleSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
   };
 
-  const handleLogin = (event) => {
-    setOpenLogin(true);
-  };
-
-  const handleCloseLogin = () => {
-    setOpenLogin(false);
-  };
-
-  const handleCloseCoinInfo = () => {
-    setOpenCoinInfo(false);
-  };
-
-  const handleSignup = () => {
-    setOpenSignup(true);
-  };
-
-  const handleCloseSignUp = () => {
-    setOpenSignup(false);
-  };
-
-  const handleDisplayCoinInfo = (coin) => {
-    setOpenCoinInfo(true);
-    setCoinDetails(coin);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setisLogged(false);
-    setUserInfo({});
-    window.location.reload();
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (currency === "MYR") {
-        axios
-          .get(
-            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=myr&order=market_cap_desc&per_page=100&page=1&sparkline=false"
-          )
-          .then((res) => {
-            res.data.forEach((node) => (node.vs_currency = currency));
-            setData(res.data);
-          });
-      } else if (currency === "USD") {
-        axios
-          .get(
-            "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false"
-          )
-          .then((res) => {
-            res.data.forEach((node) => (node.vs_currency = currency));
-            setData(res.data);
-          });
+  // Sort market data
+  const sortedMarketData = React.useMemo(() => {
+    if (!sortConfig.key) return marketData;
+    
+    const sorted = [...marketData].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+      
+      // Handle null/undefined values
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+      
+      // Numeric comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      setLoading(false);
-    };
-
-    const fetchUser = async () => {
-      const token = JSON.parse(window.localStorage.getItem("token"));
-      if (token) {
-        const { data } = await axiosInstance.get("/api/users/get", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUserInfo(data);
-        setFavourite(data?.wishlist);
-      }
-    };
-
-    function checkStorage() {
-      if (localStorage.getItem("token")) {
-        setisLogged(true);
+      
+      // String comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+      if (sortConfig.direction === 'asc') {
+        return aStr < bStr ? -1 : aStr > bStr ? 1 : 0;
       } else {
-        setisLogged(false);
+        return aStr > bStr ? -1 : aStr < bStr ? 1 : 0;
       }
-    }
+    });
+    
+    return sorted;
+  }, [marketData, sortConfig]);
 
-    fetchUser();
-    checkStorage();
-    fetchData();
-  }, [currency, isLogged]);
-
-  const [coinData] = useState([
-    {
-      title: "#",
-      field: "index",
-      sorting: "false",
-      allign: "center",
-      render: (rowData) => <Box>{rowData.market_cap_rank}</Box>,
-    },
-    {
-      field: "name",
-      title: "Coin",
-
-      render: (rowData) => {
-        return (
-          <Button
-            style={{ textTransform: "none" }}
-            //onclick alert rowdata name
-            onClick={() => handleDisplayCoinInfo(rowData)}
-          >
-            <Box
-              display="flex"
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <img
-                src={rowData.image}
-                alt={rowData.name}
-                style={{ width: "20px", height: "20px", marginRight: "10px" }}
-              />
-
-              {rowData.name}
-            </Box>
-          </Button>
-        );
-      },
-    },
-    {
-      field: "symbol",
-      title: "",
-      render: (rowData) => (
-        <Typography variant="body2" style={{ textTransform: "uppercase" }}>
-          {rowData.symbol}
-        </Typography>
-      ),
-    },
-    {
-      field: "current_price",
-      title: "Price",
-      allign: "center",
-      render: (row) => {
-        return (
-          <Box>
-            <Typography variant="body2">
-              {row?.vs_currency === "USD" ? "$" : "RM"}
-              {row.current_price}
-            </Typography>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "price_change_percentage_24h",
-      title: "24h Change",
-      render: (row) => {
-        return (
-          <Box>
-            <Typography
-              style={
-                row.price_change_percentage_24h > 0
-                  ? { color: "#8dc647" }
-                  : { color: "#e15241" }
-              }
-            >
-              {row.price_change_percentage_24h.toFixed(1)}%
-            </Typography>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "total_volume",
-      title: "24h Volume",
-      render: (row) => {
-        return (
-          <Box>
-            <Typography variant="body2">
-              {row.vs_currency === "USD" ? "$" : "RM"}
-              {row.total_volume.toLocaleString()}
-            </Typography>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "market_cap",
-      title: "Market Cap",
-      render: (row) => {
-        return (
-          <Box>
-            <Typography variant="body2">
-              {row.vs_currency === "USD" ? "$" : "RM"}
-              {row.market_cap.toLocaleString()}
-            </Typography>
-          </Box>
-        );
-      },
-    },
-  ]);
-
-  const handleTest = async (coin) => {
-    if (!userInfo.id) {
-      Alert("error", "Please login to add coin to wishlist");
-    }
-
-    let coinExists = favourite.some((x) => x.id === coin.id);
-
-    if (coinExists === false) {
+  // Fetch market data
+  useEffect(() => {
+    const loadMarketData = async () => {
       try {
-        setFavourite([coin, ...favourite]);
-        await axiosInstance.post("/api/users/wishlist", {
-          coin: coin.name,
-          coin_id: coin.id,
-          user_email: userInfo.email,
-        });
-        Alert("success", `${coin.name} added to Wishlist`);
-      } catch (err) {
-        console.log(err);
+        setLoading(true);
+        const data = await fetchMarketData(currency.toLowerCase(), 1, 100);
+        // Add currency to each coin for formatting
+        const dataWithCurrency = data.map(coin => ({ ...coin, vs_currency: currency }));
+        setMarketData(dataWithCurrency);
+      } catch (error) {
+        toast.error(`Failed to load market data: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      //Note: .filter() creates a new array that contains the new value
-      const filteredCoin = favourite.filter((x) => x.id !== coin.id);
-      setFavourite(filteredCoin);
-      await axiosInstance.post("/api/users/wishlist", {
+    };
+
+    loadMarketData();
+  }, [currency]);
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async (coin) => {
+    if (!isAuthenticated) {
+      toast.error('Please login to add coins to wishlist');
+      return;
+    }
+
+    const cooldownKey = `wishlist_${coin.id}`;
+    if (cooldownManager.isOnCooldown(cooldownKey)) {
+      toast.warning('Please wait before toggling wishlist again');
+      return;
+    }
+
+    try {
+      cooldownManager.setCooldown(cooldownKey, 2000);
+      
+      const response = await updateWishlist({
         coin: coin.name,
         coin_id: coin.id,
-        user_email: userInfo.email,
+        user_email: user.email,
       });
-      Alert("warning", `${coin.name} removed from Wishlist`);
+
+      // Update local wishlist state
+      const isInWishlist = wishlist.some(w => w.symbol === coin.symbol);
+      if (isInWishlist) {
+        setWishlist(wishlist.filter(w => w.symbol !== coin.symbol));
+      } else {
+        setWishlist([coin, ...wishlist]);
+      }
+
+      toast.success(response.message);
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
-  console.log(favourite, " user wishlist 2.0");
-
   return (
-    <ThemeProvider theme={theme}>
-      <Paper style={{ height: "100vh" }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <AppBar position="static" color="inherit">
-            <Toolbar>
-              <Typography variant="h6">
-                <Avatar alt="logo" src={logo}></Avatar>
-              </Typography>
-              <Typography
-                className={classes.nightModeButton}
-                variant={"body1"}
-                style={{ marginLeft: 5 }}
-              >
+    <div className="min-h-screen bg-light-bg-primary dark:bg-dark-bg-primary">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-light-bg-secondary/95 dark:bg-dark-bg-secondary/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-lg bg-white dark:bg-gray-800 p-1.5 flex items-center justify-center">
+                <img src={logo} alt="CoinPengin" className="h-full w-full object-contain" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
                 CoinPengin
-              </Typography>
+              </span>
+            </div>
 
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                justifyContent="center"
+            {/* Right section */}
+            <div className="flex items-center space-x-4">
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle theme"
               >
-                <Button
-                  onClick={() => {
-                    setDarkMode(!darkMode);
-                  }}
-                >
-                  {darkMode === true ? (
-                    <Tooltip title="Dark Mode">
-                      <Brightness2Icon />
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title="Light Mode">
-                      <Brightness7Icon />
-                    </Tooltip>
-                  )}
-                </Button>
-              </Box>
-              <Select
-                variant="outlined"
+                {darkMode ? (
+                  <SunIcon className="h-5 w-5" />
+                ) : (
+                  <MoonIcon className="h-5 w-5" />
+                )}
+              </button>
+
+              {/* Currency selector */}
+              <select
                 value={currency}
-                onChange={handleChangeCurrency}
-                style={{ width: 100, marginRight: 15, height: 40 }}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all"
               >
-                {currencyOptions.map((option) => (
-                  <MenuItem value={option.value}>{option.label}</MenuItem>
+                {CURRENCY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
-              </Select>
-              <Divider
-                orientation="vertical"
-                flexItem
-                style={{ marginRight: 6 }}
-              />
-              {!isLogged ? (
-                <Box className="login-signup">
-                  <Button
-                    variant="outlined"
-                    className="login-button"
-                    allign="right"
-                    onClick={handleLogin}
-                    style={{ marginRight: 6 }}
+              </select>
+
+              {/* Auth buttons */}
+              {!isAuthenticated ? (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowLoginDialog(true)}
+                    className="px-4 py-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white font-medium transition-all"
                   >
                     Login
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    className="signup-button"
-                    allign="right"
-                    onClick={handleSignup}
+                  </button>
+                  <button
+                    onClick={() => setShowSignupDialog(true)}
+                    className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
                   >
-                    Signup
-                  </Button>
-                </Box>
+                    Sign Up
+                  </button>
+                </div>
               ) : (
-                <Box style={{ marginLeft: 6 }}>
-                  <Typography>Hello, {userInfo?.firstName}</Typography>
-                  <Button
-                    variant="outlined"
-                    className="signup-button"
-                    onClick={handleLogout}
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm">Hello, {user?.firstName}!</span>
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-700 hover:border-accent-red hover:text-accent-red font-medium transition-all"
                   >
                     Logout
-                  </Button>
-                </Box>
+                  </button>
+                </div>
               )}
-            </Toolbar>
-          </AppBar>
-        </Box>
-        <Box style={{ maxWidth: "100%", marginTop: "30px" }}>
-          <Box display="flex" justifyContent="center" alignItems="center"></Box>
-          <MaterialTable
-            title={
-              <Typography
-                style={{
-                  fontWeight: "bold",
-                  fontSize: 24,
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2">
+            Cryptocurrency Prices by Market Cap
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Track real-time cryptocurrency prices and market data
+          </p>
+        </div>
+
+        {/* Table */}
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th 
+                    onClick={() => handleSort('market_cap_rank')}
+                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      #
+                      {sortConfig.key === 'market_cap_rank' && (
+                        <span className="text-primary-600">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('name')}
+                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      Coin
+                      {sortConfig.key === 'name' && (
+                        <span className="text-primary-600">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('current_price')}
+                    className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      Price
+                      {sortConfig.key === 'current_price' && (
+                        <span className="text-primary-600">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('price_change_percentage_24h')}
+                    className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      24h
+                      {sortConfig.key === 'price_change_percentage_24h' && (
+                        <span className="text-primary-600">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('market_cap')}
+                    className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      Market Cap
+                      {sortConfig.key === 'market_cap' && (
+                        <span className="text-primary-600">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  Array.from({ length: 10 }).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan="6" className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : sortedMarketData.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      No data available
+                    </td>
+                  </tr>
+                ) : (
+                  sortedMarketData
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((coin) => {
+                    const isInWishlist = wishlist?.some(w => w.symbol === coin.symbol);
+                    return (
+                      <tr
+                        key={coin.id}
+                        onClick={() => {
+                          setSelectedCoin(coin);
+                          setShowCoinDialog(true);
+                        }}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4 text-sm">{coin.market_cap_rank}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={coin.image}
+                              alt={coin.name}
+                              className="h-6 w-6 rounded-full"
+                            />
+                            <div>
+                              <div className="font-medium">{coin.name}</div>
+                              <div className="text-xs text-gray-500 uppercase">{coin.symbol}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium">
+                          {formatCurrency(coin.current_price, currency)}
+                        </td>
+                        <td className={`px-6 py-4 text-right font-medium ${getChangeColor(coin.price_change_percentage_24h)}`}>
+                          {formatPercentage(coin.price_change_percentage_24h, 1)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {formatCurrency(coin.market_cap, currency)}
+                        </td>
+                        <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleWishlistToggle(coin)}
+                            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Toggle wishlist"
+                          >
+                            {isInWishlist ? (
+                              <HeartSolidIcon className="h-5 w-5 text-accent-red" />
+                            ) : (
+                              <HeartIcon className="h-5 w-5" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Pagination Controls */}
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Rows per page:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setPage(0);
                 }}
+                className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all"
               >
-                {" "}
-                Cryptocurrency Prices by Market Cap
-              </Typography>
-            }
-            tableRef={tableRef}
-            icons={tableIcons}
-            columns={coinData}
-            data={data}
-            options={{
-              pageSize: 10,
-              pageSizeOptions: [10, 20, 30],
-            }}
-            actions={[
-              (rowData) => {
-                const active = favourite?.find(
-                  (fav) => fav.symbol === rowData.symbol
-                );
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, sortedMarketData.length)} of {sortedMarketData.length}
+              </span>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={(page + 1) * rowsPerPage >= sortedMarketData.length}
+                  className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
 
-                return {
-                  icon: () =>
-                    userInfo?.id && active ? (
-                      //either checkwishlist or active is true
-                      <Favorite style={{ color: "#e15241" }} />
-                    ) : (
-                      <FavoriteBorderIcon />
-                    ),
-                  onClick: (event, rowData) => {
-                    handleTest(rowData);
-                  },
-                };
-              },
-            ]}
-            localization={{
-              header: {
-                actions: "",
-              },
-            }}
-          />
-          <ToastContainer autoClose={2000} />
-        </Box>
-        <Footer />
-      </Paper>
+      {/* Footer */}
+      <footer className="mt-16 border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col items-center space-y-2">
+            <p className="text-center text-gray-500 text-sm">
+              © {new Date().getFullYear()} CoinPengin. Powered by CoinGecko API.
+            </p>
+            <p className="text-center text-gray-500 text-sm">
+              Built by{' '}
+              <a
+                href="https://github.com/syliow"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
+              >
+                Liow Shan Yi
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
 
-      <SignupDialog open={openSignup} handleClose={handleCloseSignUp} />
-      <LoginDialog open={openLogin} handleClose={handleCloseLogin} />
-      <CoinInfoDialog
-        open={openCoinInfo}
-        handleClose={handleCloseCoinInfo}
-        coinDetails={coinDetails}
-        currency={currency}
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        handleClose={() => setShowLoginDialog(false)}
       />
-    </ThemeProvider>
+      
+      {/* Signup Dialog */}
+      <SignupDialog
+        open={showSignupDialog}
+        handleClose={() => setShowSignupDialog(false)}
+      />
+      
+      {/* Coin Details Dialog */}
+      {selectedCoin && (
+        <CoinInfoDialog
+          open={showCoinDialog}
+          handleClose={() => setShowCoinDialog(false)}
+          coinDetails={selectedCoin}
+          currency={currency}
+        />
+      )}
+    </div>
   );
 }
 

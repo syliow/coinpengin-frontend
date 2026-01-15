@@ -1,13 +1,121 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-light-bg-primary dark:bg-dark-bg-primary;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+    @apply font-sans;
+    @apply transition-colors duration-200;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Custom components */
+@layer components {
+  /* Card styles */
+  .card {
+    @apply bg-light-bg-secondary dark:bg-dark-bg-tertiary;
+    @apply rounded-xl shadow-card;
+    @apply transition-all duration-200;
+    @apply hover:shadow-card-hover;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg;
+    @apply bg-primary-600 hover:bg-primary-700;
+    @apply text-white font-medium;
+    @apply transition-colors duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 rounded-lg;
+    @apply bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600;
+    @apply text-gray-900 dark:text-white font-medium;
+    @apply transition-colors duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply px-4 py-2 rounded-lg;
+    @apply border-2 border-primary-600 hover:bg-primary-600;
+    @apply text-primary-600 hover:text-white font-medium;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Input styles */
+  .input-field {
+    @apply w-full px-4 py-2 rounded-lg;
+    @apply bg-gray-100 dark:bg-gray-800;
+    @apply border-2 border-gray-300 dark:border-gray-700;
+    @apply focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20;
+    @apply transition-all duration-200;
+    @apply outline-none;
+  }
+
+  /* Link styles */
+  .link {
+    @apply text-primary-600 hover:text-primary-700;
+    @apply transition-colors duration-200;
+    @apply cursor-pointer;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-positive {
+    @apply text-accent-green;
+  }
+
+  .text-negative {
+    @apply text-accent-red;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-r from-primary-500 to-primary-700;
+  }
+
+  .glassmorphism {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md;
+  }
+}
+
+/* Remove default margins */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
 }
